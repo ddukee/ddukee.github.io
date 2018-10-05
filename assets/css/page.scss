@@ -1,0 +1,104 @@
+---
+---
+@import "core";
+
+.posts {
+  width: $content-width;
+  margin-left: auto;
+  margin-right: auto;
+  
+  .title {
+    @include relative-font-size(1.0);
+    font-weight: $base-font-weight * 1.5;
+  }
+  
+  .post-list {
+    .year-separator {
+      @include relative-font-size(1.2);
+      margin: 10px 0px;
+      color: $red-color;
+    }
+    
+    .post-item {
+      margin-left: 10px;
+      .post-title {
+        margin: 10px 0px 5px 0px;
+        .post-date {
+          color: #ccc;
+          margin-right: 10px;
+        }
+        .post-name {
+          @include relative-font-size(1.1);
+          a:hover {
+            color: $text-color;
+          }
+        }
+      }
+      .post-abbreviation {
+        @include relative-font-size(0.9);
+      }
+    }  
+  }
+}
+
+.pagination {
+  width: $content-width;
+  margin-left: auto;
+  margin-right: auto;
+  
+  .paginator-prev-arrow-unactive {
+    color: #ccc;
+  }
+  
+  .paginator-next-arrow-unactive {
+    color: #ccc;
+  }
+  
+  .paginator-page-active {
+    text-decoration: underline;
+  }
+}
+
+.categories, .tags {
+  width: $content-width;
+  margin-left: auto;
+  margin-right: auto;
+    
+  .title {
+    @include relative-font-size(1.0);
+    font-weight: $base-font-weight * 1.5;
+  }
+  
+  .category-cloud, .tag-cloud {
+    margin-top: 10px;
+    margin-bottom: 30px;
+  }
+  
+  .category-list, .tag-list {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    
+    .category, .tag {
+      .category-name, .tag-name {
+        @include relative-font-size(1.0);
+        font-weight: $base-font-weight * 1.5;
+        margin-top: 5px;
+        margin-bottom: 5px;
+      }
+      .category-post-list, .tag-post-list {
+        margin-left: 1em;
+        .category-post-item, .tag-post-item {
+          .post-date {
+            color: #ccc;
+            margin-right: 15px;
+          }
+          .post-name {
+            &:hover {
+              color: $text-color;
+            }
+          }
+        }
+      }
+    }
+  }
+}

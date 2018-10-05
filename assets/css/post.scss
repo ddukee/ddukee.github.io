@@ -1,0 +1,57 @@
+---
+---
+@import "core";
+@import "syntax-highlighting";
+
+%contents-level {
+  list-style: none outside;
+  text-indent: 1em;
+}
+
+.contents {
+  width: $content-width - 20px;
+  margin: auto;
+  margin-bottom: 40px;
+  border: dashed 1px $horizontal-line-color;
+  border-radius: 5px;
+  padding: 10px;
+  
+  .contents-title {
+    @include relative-font-size(1.5);
+    font-weight: $base-font-weight;
+  }
+
+  .contents-level-2 {
+    @extend %contents-level;
+    @include relative-font-size(0.9);
+  }
+
+  .contents-level-3 {
+    @extend %contents-level;
+    @include relative-font-size(0.9);
+    text-indent: 2em;
+  } 
+}
+
+.title {
+  @include relative-font-size(2);
+  width: $content-width;
+  margin: auto;
+  padding-bottom: 5px;
+  margin-bottom: 4px;
+}
+
+.post-meta-info {
+  @include relative-font-size(0.8);
+  text-align: right;
+  width: $content-width;
+  margin: auto;
+  margin-top: 5px;
+  margin-bottom: 20px;
+}
+
+.content {
+  width: $content-width;
+  margin: auto;
+  margin-top: 40px;
+}
