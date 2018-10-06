@@ -17,7 +17,7 @@ title: "Tech 101"
 author: "Duke"
 email: "740313507@qq.com"
 description: >- # this means to ignore newlines until "baseurl:"
-        学习记录和分享
+        谨以此纪念那些年挖过的坑和埋过的人
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "http://ddukee.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  ddukee

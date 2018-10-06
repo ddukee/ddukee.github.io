@@ -1,5 +1,11 @@
+.highlighter-rouge {
+  @include relative-font-size(0.8);
+  font-weight: $base-font-weight * 1.5;
+}
+
 .highlight {
   background: #fff;
+  @include relative-font-size(0.7);
   @extend %vertical-rhythm;
 
   .highlighter-rouge & {

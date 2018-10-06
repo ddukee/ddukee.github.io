@@ -6,10 +6,12 @@ permalink: /tags/
   <div class="title">Tags</div>
   <div class="solid-horizontal-line"></div>
   {% if site.tags.size > 0 %}
-    <div class="tag-cloud">
+    <div class="tag-cloud" id="tagcloud">
       {% for tag in site.tags %}
         <span class="tag-cloud-item">
-          <a href="#{{ tag[0] }}">{{ tag[0] | downcase | capitalize }}({{ tag[1].size }})</a>
+          <a href="#{{ tag[0] }}" rel="{{ tag[1].size }}">
+            {{ tag[0] | downcase | capitalize }}<sup>{{ tag[1].size }}</sup>
+          </a>
         </span>
       {% endfor %}
     </div>

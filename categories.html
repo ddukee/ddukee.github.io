@@ -7,10 +7,12 @@ permalink: /categories/
   <div class="title">Categories</div>
   <div class="solid-horizontal-line"></div>
   {% if site.categories.size > 0 %}
-    <div class="category-cloud">
+    <div class="category-cloud" id="tagcloud">
       {% for category in site.categories %}
         <span class="category-cloud-item">
-          <a href="#{{ category[0] }}">{{ category[0] | downcase | capitalize }}({{ category[1].size }})</a>
+          <a href="#{{ category[0] }}" rel="{{ category[1].size }}">
+            {{ category[0] | downcase | capitalize }}<sup>{{ category[1].size }}</sup>
+          </a>
         </span>
       {% endfor %}
     </div>

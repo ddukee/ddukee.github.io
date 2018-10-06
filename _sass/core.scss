@@ -1,8 +1,13 @@
-$base-font-family: "source-code-pro",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L",Monaco,"Courier New",Courier,monospace !default;
+@import url(https://fonts.googleapis.com/css?family=Galdeano);
+@import url(https://fonts.googleapis.com/css?family=Electrolize);
+@import url(https://fonts.googleapis.com/css?family=Cuprum);
 
-$base-font-size:   14px !default;
+$base-font-family: "Galdeano","Hiragino Sans GB","Microsoft YaHei",Trebuchet,"Trebuchet MS",Tahoma,"Lucida Grande","Lucida Sans Unicode",Verdana,sans-serif !default;
+
+$title-font-family: "Cuprum","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+
+$base-font-size:   16px !default;
 $base-font-weight: 400 !default;
-$small-font-size:  $base-font-size * 0.875 !default;
 $base-line-height: 1.5 !default;
 
 $spacing-unit:     30px !default;
@@ -30,6 +35,12 @@ $content-width:    800px !default;
           font-feature-settings: $property;
 }
 
+%page-width {
+  width: $content-width;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 body, h1, h2, h3, h4, h5, h6,
 p, blockquote, pre, hr,
 dl, dd, ol, ul, figure {
@@ -39,19 +50,22 @@ dl, dd, ol, ul, figure {
 
 body {
   @include font-feature-settings("kern" 1);
+  font-family: $base-font-family;
   font: $base-font-weight #{$base-font-size}/#{$base-line-height} $base-font-family;
   color: $text-color;
   background-color: $background-color;
   -webkit-text-size-adjust: 100%;
   font-kerning: normal;
-  display: flex;
   min-height: 100vh;
-  flex-direction: column;
 }
 
 a {
   text-decoration: none;
   color: $red-color;
+  
+  &:hover {
+    color: $text-color;
+  }
 }
 
 h1, h2, h3, h4, h5, h6,
@@ -72,13 +86,15 @@ h1, h2, h3, h4, h5, h6 {
 
 pre,
 code {
-  @include relative-font-size(0.9375);
+  font-family: "source-code-pro","Monaco",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L","Courier New",Courier,monospace;
   border: 1px solid $grey-color-light;
   border-radius: 3px;
   background-color: #f8f8f8;
 }
 
 code {
+  margin-left: 0.3em;
+  margin-right: 0.3em;
   padding: 1px 5px;
 }
 
@@ -103,11 +119,12 @@ pre {
 }
 
 .navigator {
-  width: $content-width;
-  margin: auto;
-  margin-top: 20px;
+  @extend %page-width;
+  @include relative-font-size(2);
+  font-family: "Electrolize",sans-serif;
+  margin-top: 10px;
   margin-bottom: 40px;
-  padding-top: 20px;
+  padding-top: 10px;
   padding-bottom: 20px;
   text-align: center;
     
@@ -138,13 +155,11 @@ pre {
 }
 
 .solid-horizontal-line {
-  width: $content-width;
-  margin: 0px auto;
+  @extend %page-width;
   border-bottom: 1px solid $horizontal-line-color;
 }
 
 .dashed-horizontal-line {
-  width: $content-width;
-  margin: 10px auto;
+  @extend %page-width;
   border-bottom: 1px dashed $horizontal-line-color;
 }

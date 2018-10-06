@@ -17,7 +17,10 @@ layout: page
           <span class="post-name"><a href="{{ post.url }}">{{ post.title }}</a></span>
         </div>
         <div class="post-abbreviation">
-          <p>{{ post.content | strip_html | truncate: site.truncate }}</p>
+          <p>
+            {{ post.content | strip_html | truncate: site.truncate }}
+            <a href="{{ post.url }}">&nbsp;正文&gt;&gt;</a>
+          </p>
         </div>
       </div>
     {% endfor %}

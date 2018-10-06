@@ -9,8 +9,8 @@
 }
 
 .contents {
+  @extend %page-width;
   width: $content-width - 20px;
-  margin: auto;
   margin-bottom: 40px;
   border: dashed 1px $horizontal-line-color;
   border-radius: 5px;
@@ -30,28 +30,92 @@
     @extend %contents-level;
     @include relative-font-size(0.9);
     text-indent: 2em;
-  } 
+  }
 }
 
 .title {
   @include relative-font-size(2);
-  width: $content-width;
-  margin: auto;
-  padding-bottom: 5px;
-  margin-bottom: 4px;
+  @extend %page-width;
 }
 
 .post-meta-info {
   @include relative-font-size(0.8);
+  @extend %page-width;
   text-align: right;
-  width: $content-width;
-  margin: auto;
   margin-top: 5px;
   margin-bottom: 20px;
+  
+  .tag {
+    color: white;
+    background-color: $red-color;
+    padding: 1px 4px;
+    border-radius: 3px;
+    
+    a {
+      font-size: 80%;
+      color: inherit;
+    }
+  }
 }
 
 .content {
-  width: $content-width;
-  margin: auto;
+  @extend %page-width;
   margin-top: 40px;
+  
+  h2 + p, h3 + p, h4 + p, 
+  h5 + p, h6 + p, p + p {
+    text-indent: 2em;
+  }
+  
+  ol li, ul li {
+    list-style: decimal inside;
+    text-indent: 3em;
+  }
+  
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  blockquote {
+    border: dashed 1px #ccc;
+    border-radius: 3px;
+    text-indent: 1em;
+    padding: 5px;
+    background-color: #eee;
+    
+    p {
+      margin: 0px;
+      padding: 0px;
+      
+      &::first-letter {
+        text-transform: uppercase;
+        @include relative-font-size(1.5);
+      }
+    }
+  }
+}
+
+.post-navigator {
+  @extend %page-width;
+  margin-top: 40px;
+  overflow: auto;
+  
+  .previous-navigator, .next-navigator, .home-navigator {
+    float: left;
+    width: 33.33%;
+  }
+  
+  .previous-navigator {
+    text-align: left;
+  }
+  
+  .home-navigator {
+    text-align: center;
+  }
+  
+  .next-navigator {
+    text-align: right;
+  }
 }

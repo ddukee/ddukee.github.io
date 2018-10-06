@@ -2,14 +2,17 @@
 ---
 @import "core";
 
+%title-font {
+  font-family: $title-font-family;
+  @include relative-font-size(1.8);
+  font-weight: $base-font-weight * 1.3;
+}
+
 .posts {
-  width: $content-width;
-  margin-left: auto;
-  margin-right: auto;
+  @extend %page-width;
   
   .title {
-    @include relative-font-size(1.0);
-    font-weight: $base-font-weight * 1.5;
+    @extend %title-font;
   }
   
   .post-list {
@@ -27,12 +30,6 @@
           color: #ccc;
           margin-right: 10px;
         }
-        .post-name {
-          @include relative-font-size(1.1);
-          a:hover {
-            color: $text-color;
-          }
-        }
       }
       .post-abbreviation {
         @include relative-font-size(0.9);
@@ -42,9 +39,7 @@
 }
 
 .pagination {
-  width: $content-width;
-  margin-left: auto;
-  margin-right: auto;
+  @extend %page-width;
   
   .paginator-prev-arrow-unactive {
     color: #ccc;
@@ -60,18 +55,24 @@
 }
 
 .categories, .tags {
-  width: $content-width;
-  margin-left: auto;
-  margin-right: auto;
+  @extend %page-width;
     
   .title {
-    @include relative-font-size(1.0);
-    font-weight: $base-font-weight * 1.5;
+    @extend %title-font;
   }
   
   .category-cloud, .tag-cloud {
+    @include relative-font-size(1.2);
     margin-top: 10px;
     margin-bottom: 30px;
+    
+    a {
+      color: $red-color;
+    }
+    
+    .category-cloud-item, .tag-cloud-item {
+      margin-right: 0.5em;
+    }
   }
   
   .category-list, .tag-list {
@@ -79,11 +80,11 @@
     margin-bottom: 10px;
     
     .category, .tag {
+      margin-bottom: 10px;
+      
       .category-name, .tag-name {
-        @include relative-font-size(1.0);
+        @include relative-font-size(1.2);
         font-weight: $base-font-weight * 1.5;
-        margin-top: 5px;
-        margin-bottom: 5px;
       }
       .category-post-list, .tag-post-list {
         margin-left: 1em;
@@ -92,13 +93,21 @@
             color: #ccc;
             margin-right: 15px;
           }
-          .post-name {
-            &:hover {
-              color: $text-color;
-            }
-          }
         }
       }
     }
+  }
+}
+
+.about {
+  @extend %page-width;
+    
+  .title {
+    @extend %title-font;
+  }
+  
+  .description {
+    margin-top: 10px;
+    margin-bottom: 40px;
   }
 }
