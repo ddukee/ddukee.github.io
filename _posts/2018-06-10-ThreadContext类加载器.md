@@ -2,7 +2,7 @@
 layout: post
 title:  ThreadContext类加载器
 date:   2018-06-10 20:35:00 +0800
-categories: java
+categories: programing-language
 tags: java classloader
 published: true
 ---
@@ -132,9 +132,9 @@ protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundE
 
 如果没有采用双亲委派机制，那么System类加载器可以在 **classpath** 路径中找到String的class文件并加载到程序中，导致JDK中的 **String** 实现被覆盖。所以类加载器的这种工作方式，在一定程度上保证了Java程序可以安全稳定的运行。
 
-## 线程上下文类加载器
+## ThreadContext类加载器
 
-上面讲了那么多类加载器相关的内容，可还是没有讲到今天的主题，线程上下文类加载器。
+上面讲了那么多类加载器相关的内容，可还是没有讲到今天的主题：**线程上下文类加载器（Thread Context ClassLoader）**。
 
 到这里，我们已经知道Java提供了三种类加载器，并且按照严格的双亲委派机制协同工作。表面上，似乎很完美，但正是这种严格的双亲委派机制导致在加载类的时候，存在一些局限性。
 

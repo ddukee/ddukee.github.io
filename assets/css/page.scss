@@ -62,7 +62,7 @@
   }
   
   .category-cloud, .tag-cloud {
-    @include relative-font-size(1.2);
+    font-size: 14px;
     margin-top: 10px;
     margin-bottom: 30px;
     
