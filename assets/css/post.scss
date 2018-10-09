@@ -93,10 +93,9 @@
   }
   
   blockquote {
-    border: dashed 1px #ccc;
-    border-radius: 3px;
+    border-left: solid 5px #aaa;
     text-indent: 1em;
-    padding: 5px;
+    padding: 5px 10px;
     background-color: #eee;
     
     p {
