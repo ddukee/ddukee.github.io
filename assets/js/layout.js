@@ -42,4 +42,37 @@ function renderContent() {
   contentElement.html(html);
 }
 
-$(renderContent)
+function copyBtn() {
+  var clipboard = new ClipboardJS('.copy-btn', {
+    target: function(trigger) {
+      return trigger.nextElementSibling;
+    }
+  });
+  
+  clipboard.on('success', function(e) {
+    e.clearSelection();
+  });
+  
+  var codeElement = $("figure.highlight");
+  codeElement.prepend("<div class=\"copy-btn\"><a href=\"#/\"><img class=\"copy-img\" src=\"/assets/images/clippy.svg\"></img>复制</a></div>");
+  
+  $(".copy-btn > a").mousedown(function() {
+    $(this).fadeOut(50);
+    $(this).fadeIn(100);
+  });
+  
+  codeElement.hover(
+    function() {
+      var copyBtnElement = $(this).find(".copy-btn");
+      copyBtnElement.fadeIn(100);
+    },
+    function() {
+      var copyBtnElement = $(this).find(".copy-btn");
+      copyBtnElement.fadeOut(100);
+    })
+}
+
+$(function() {
+  renderContent();
+  copyBtn();
+})

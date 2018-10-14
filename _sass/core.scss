@@ -84,31 +84,6 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: $base-font-weight;
 }
 
-pre,
-code {
-  font-family: "source-code-pro","Monaco",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L","Courier New",Courier,monospace;
-  border: 1px solid $grey-color-light;
-  border-radius: 3px;
-  background-color: #f8f8f8;
-}
-
-code {
-  margin-left: 0.3em;
-  margin-right: 0.3em;
-  padding: 1px 5px;
-}
-
-pre {
-  padding: 8px 12px;
-  overflow-x: auto;
-
-  > code {
-    border: 0;
-    padding-right: 0;
-    padding-left: 0;
-  }
-}
-
 .footer {
   @include relative-font-size(0.8);
   width: $content-width;
