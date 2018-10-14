@@ -36,6 +36,7 @@
 .title {
   @include relative-font-size(2);
   @extend %page-width;
+  letter-spacing: -1px;
 }
 
 .post-meta-info {
