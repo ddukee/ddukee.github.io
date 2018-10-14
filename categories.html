@@ -1,0 +1,35 @@
+---
+layout: page
+permalink: /categories/
+---
+
+<div class="categories">
+  <div class="title">Categories</div>
+  <div class="solid-horizontal-line"></div>
+  {% if site.categories.size > 0 %}
+    <div class="category-cloud" id="tagcloud">
+      {% for category in site.categories %}
+        <span class="category-cloud-item">
+          <a href="#{{ category[0] }}" rel="{{ category[1].size }}">
+            {{ category[0] | downcase | capitalize }}<sup>{{ category[1].size }}</sup>
+          </a>
+        </span>
+      {% endfor %}
+    </div>
+    <div class="category-list">
+      {% for category in site.categories %}
+        <div class="category">
+          <div class="category-name" id="{{ category[0] }}">{{ category[0] | downcase | capitalize }}</div>
+          <div class="category-post-list">
+            {% for post in category[1] %}
+              <div class="category-post-item">
+                <span class="post-date">{{ post.date | date: "%Y-%m-%d" }}</span>
+                <a class="post-name" href="{{ post.url }}">{{ post.title }}</a>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

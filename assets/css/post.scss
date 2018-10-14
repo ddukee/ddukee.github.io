@@ -1,0 +1,236 @@
+---
+---
+@import "core";
+@import "syntax-highlighting";
+
+%contents-level {
+  list-style: none outside;
+  text-indent: 1em;
+}
+
+.contents {
+  @extend %page-width;
+  width: $content-width - 20px;
+  margin-bottom: 40px;
+  border: dashed 1px $horizontal-line-color;
+  border-radius: 5px;
+  padding: 10px;
+  
+  .contents-title {
+    @include relative-font-size(1.5);
+    font-weight: $base-font-weight;
+  }
+
+  .contents-level-2 {
+    @extend %contents-level;
+    @include relative-font-size(0.9);
+  }
+
+  .contents-level-3 {
+    @extend %contents-level;
+    @include relative-font-size(0.9);
+    text-indent: 2em;
+  }
+}
+
+.title {
+  @include relative-font-size(2);
+  @extend %page-width;
+}
+
+.post-meta-info {
+  @include relative-font-size(0.8);
+  @extend %page-width;
+  text-align: right;
+  margin-top: 5px;
+  margin-bottom: 20px;
+  
+  .tag {
+    color: white;
+    background-color: $red-color;
+    padding: 1px 4px;
+    border-radius: 3px;
+    
+    a {
+      font-size: 80%;
+      color: inherit;
+    }
+  }
+}
+
+.content {
+  @extend %page-width;
+  margin-top: 40px;
+  
+  .copy-btn {
+    display: none;
+    position: relative;
+    float: right;
+    z-index: 100;
+    margin-left: -100px;
+    text-align: center;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    background-color: #eee;
+    
+    a {
+      border: none;
+      display: block;
+      padding: 5px 5px 3px 5px;
+      color: black;
+      text-align: center;
+      
+      &:active, &:focus, &:visited {
+        border: none;
+      }
+    }
+    
+    .copy-img {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      padding-right: 0.1em;
+      vertical-align: top;
+    }
+  }
+  
+  figure.highlight {
+    border: 1px solid $grey-color-light;
+    border-radius: 3px;
+    background-color: #f8f8f8;
+  }
+  
+  code.highlighter-rouge {
+    border: 1px solid $grey-color-light;
+    border-radius: 3px;
+    background-color: #f8f8f8;
+  }
+  
+  pre,
+  code {
+    font-family: "source-code-pro","Monaco",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L","Courier New",Courier,monospace;
+  }
+
+  code {
+    margin-left: 0.3em;
+    margin-right: 0.3em;
+    padding: 1px 5px;
+  }
+
+  pre {
+    padding: 8px 8px;
+    margin-bottom: 0px;
+    overflow-x: auto;
+    
+    > code {
+      border: 0;
+      padding-right: 0;
+      padding-left: 0;
+    }
+  }
+  
+  h2 {
+    font-weight: $base-font-weight * 1.5;
+    @include relative-font-size(1.5);
+    &:before {
+      content: "§ ";
+      vertical-align: baseline;
+    }
+  }
+  
+  h3 {
+    font-weight: $base-font-weight * 1.5;
+    @include relative-font-size(1.2);
+  }
+  
+  h2 + p, h3 + p, h4 + p, 
+  h5 + p, h6 + p, p + p {
+    text-indent: 2em;
+  }
+  
+  ol li, ul li {
+    list-style: decimal inside;
+    text-indent: 3em;
+  }
+  
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  blockquote {
+    border-left: solid 5px #aaa;
+    text-indent: 1em;
+    padding: 5px 10px;
+    background-color: #eee;
+    
+    p {
+      margin: 0px;
+      padding: 0px;
+      
+      &::first-letter {
+        text-transform: uppercase;
+        @include relative-font-size(1.5);
+      }
+    }
+  }
+  
+  table {
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    
+    th {
+      @include relative-font-size(1.1);
+      padding: 0.3em 0.5em;
+      font-weight: bolder;
+      color: white;
+      background-color: $red-color;
+    }
+    
+    thead {
+      tr {
+        border-bottom: solid 2px #fff;
+      }
+    }
+    
+    tbody {
+      background-color: #fefefe;
+      td {
+        border-bottom: solid 1px #ddd;
+        padding: 0.3em 0.5em;
+      }
+      
+      tr:nth-child(even) {
+        background-color: #f5f5f5;        
+      }
+      
+      tr:hover {
+        background-color: #f5f5f5;
+      }
+    }
+  }
+}
+
+.post-navigator {
+  @extend %page-width;
+  margin-top: 40px;
+  overflow: auto;
+  
+  .previous-navigator, .next-navigator, .home-navigator {
+    float: left;
+    width: 33.33%;
+  }
+  
+  .previous-navigator {
+    text-align: left;
+  }
+  
+  .home-navigator {
+    text-align: center;
+  }
+  
+  .next-navigator {
+    text-align: right;
+  }
+}
