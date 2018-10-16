@@ -2,7 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>{{ page.title }}</title>
+    {% if page.title %}
+      <title>{{ site.title }}{{ page.title | capitalize | prepend: " &dash; " }}</title>
+    {% else %}
+      <title>{{ site.title }}</title>
+    {% endif %}
     {% include head.html %}
     <script src="/assets/js/layout.js" type="text/javascript"></script>
     <link rel="stylesheet" type="text/css" href="/assets/css/page.css"/>
