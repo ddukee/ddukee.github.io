@@ -51,11 +51,16 @@
     background-color: $red-color;
     padding: 1px 4px;
     border-radius: 3px;
+    vertical-align: 2px;
     
     a {
       font-size: 80%;
       color: inherit;
     }
+  }
+
+  .category {
+    vertical-align: 1px;
   }
 }
 
@@ -119,6 +124,7 @@
   
   code.highlighter-rouge {
     border: 1px solid $grey-color-light;
+    vertical-align: top;
     border-radius: 3px;
     background-color: #f8f8f8;
   }
@@ -129,7 +135,7 @@
   }
 
   code {
-    padding: 1px 5px;
+    padding: 1px 3px;
   }
 
   pre {
@@ -162,7 +168,6 @@
   h5 + p, h6 + p, p + p {
     text-indent: 2em;
     word-wrap: break-word;
-    word-break: keep-all;
   }
   
   ol li, ul li {
