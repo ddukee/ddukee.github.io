@@ -51,17 +51,38 @@
     background-color: $red-color;
     padding: 1px 4px;
     border-radius: 3px;
+    vertical-align: 2px;
     
     a {
       font-size: 80%;
       color: inherit;
     }
   }
+
+  .category {
+    vertical-align: 1px;
+  }
 }
 
 .content {
   @extend %page-width;
   margin-top: 40px;
+  
+  .lang-label {
+    text-align: right;
+    font-weight: inherit;
+    color: #aaa;
+    text-transform: capitalize;
+    
+    span {
+      display: inline-block;
+      padding-right: 0.3em;
+      padding-left: 0.3em;
+      vertical-align: baseline;
+      font-family: "source Code Pro","Monaco",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L","Courier New",Courier,monospace;
+      @include relative-font-size(0.5);
+    }
+  }
   
   .copy-btn {
     display: none;
@@ -103,19 +124,18 @@
   
   code.highlighter-rouge {
     border: 1px solid $grey-color-light;
+    vertical-align: top;
     border-radius: 3px;
     background-color: #f8f8f8;
   }
   
   pre,
   code {
-    font-family: "source-code-pro","Monaco",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L","Courier New",Courier,monospace;
+    font-family: "source Code Pro","Monaco",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L","Courier New",Courier,monospace;
   }
 
   code {
-    margin-left: 0.3em;
-    margin-right: 0.3em;
-    padding: 1px 5px;
+    padding: 1px 3px;
   }
 
   pre {
@@ -147,6 +167,7 @@
   h2 + p, h3 + p, h4 + p, 
   h5 + p, h6 + p, p + p {
     text-indent: 2em;
+    word-wrap: break-word;
   }
   
   ol li, ul li {
@@ -234,4 +255,43 @@
   .next-navigator {
     text-align: right;
   }
+}
+
+.message {
+  visibility: visible;
+  min-width: 200px;
+  margin-left: -125px;
+  background-color: #333;
+  opacity: 1;
+  color: #fff;
+  text-align: center;
+  border-radius: 3px;
+  padding: 5px;
+  position: fixed;
+  z-index: 1;
+  left: 50%;
+  top: 30px;
+  font-size: 12px;
+  -webkit-animation: fadein 0.5s, fadeout 0.5s 1.5s;
+  animation: fadein 0.5s, fadeout 0.5s 1.5s;
+}
+
+@-webkit-keyframes fadein {
+  from {top: 0; opacity: 0;} 
+  to {top: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+  from {top: 0; opacity: 0;}
+  to {top: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+  from {bottom: 30px; opacity: 1;} 
+  to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+  from {top: 30px; opacity: 1;}
+  to {top: 0; opacity: 0;}
 }
