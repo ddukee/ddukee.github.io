@@ -71,10 +71,11 @@ public static void main(String[] args) {
 
 其中获取Bootstrap类加载器永远返回 **null** 值
 
-{% highlight bash %}
-$ null # Bootstrap类加载器
-  sun.misc.Launcher$ExtClassLoader@5e2de80c # Extension类加载器
-  sun.misc.Launcher$AppClassLoader@18b4aac2 # System类加载器
+{% highlight text %}
+$ java Main
+null # Bootstrap类加载器
+sun.misc.Launcher$ExtClassLoader@5e2de80c # Extension类加载器
+sun.misc.Launcher$AppClassLoader@18b4aac2 # System类加载器
 {% endhighlight %}
 
 ## 双亲委派模型
