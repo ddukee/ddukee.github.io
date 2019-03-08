@@ -1,6 +1,10 @@
 .highlighter-rouge {
   @include relative-font-size(0.8);
   font-weight: $base-font-weight * 1.5;
+  color: $red-color;
+  background-color: #f9f2f4;
+  border-radius: 3px;
+  vertical-align: text-bottom;
 }
 
 .highlight {
