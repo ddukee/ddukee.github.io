@@ -117,12 +117,6 @@
     background-color: #f8f8f8;
   }
   
-  code.highlighter-rouge {
-    border: 1px solid $grey-color-light;
-    border-radius: 3px;
-    background-color: #f8f8f8;
-  }
-  
   pre,
   code {
     font-family: "source Code Pro","Monaco",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L","Courier New",Courier,monospace;
@@ -162,7 +156,7 @@
   h5 + p, h6 + p, p + p {
     text-indent: 2em;
     word-wrap: break-word;
-    word-break: keep-all;
+    word-break: normal;
   }
   
   ol li, ul li {
