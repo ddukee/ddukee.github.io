@@ -265,6 +265,29 @@
   animation: fadein 0.5s, fadeout 0.5s 1.5s;
 }
 
+.jump-top {
+  position: fixed;
+  bottom: 40px;
+  right: 80px;
+  cursor: pointer;
+  border: solid 1px #eee;
+  padding: 10px 10px 6px 10px;
+  text-align: center;
+  
+  & .arrow-up {
+    width: 0; 
+    height: 0; 
+    margin: auto;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid black;
+  }
+  
+  &:hover {
+    background-color: #efefef;
+  }
+}
+
 @-webkit-keyframes fadein {
   from {top: 0; opacity: 0;} 
   to {top: 30px; opacity: 1;}
