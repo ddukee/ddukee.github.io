@@ -1,6 +1,7 @@
 import Content from "./content";
 import CopyButton from './copy-button';
 import SyntaxHighlight from './syntax-hightlig';
+import TopJumper from './top-jumper';
 
 document.addEventListener(
   'DOMContentLoaded', 
@@ -25,5 +26,6 @@ document.addEventListener(
     }
     new CopyButton();
     new SyntaxHighlight();
+    new TopJumper("jump-top");
   }, 
 false);
