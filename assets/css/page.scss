@@ -30,15 +30,21 @@
           color: #ccc;
           margin-right: 10px;
         }
+        .post-name {
+          font-family: $post-font-family;
+        }
       }
       .post-abbreviation {
         @include relative-font-size(0.9);
+        font-family: $post-font-family;
       }
     }  
   }
 }
 
 .pagination {
+  font-family: $post-font-family;
+  @include relative-font-size(0.8);
   @extend %page-width;
   
   .paginator-prev-arrow-unactive {
@@ -62,7 +68,7 @@
   }
   
   .category-cloud, .tag-cloud {
-    font-size: 14px;
+    font-size: 12px;
     margin-top: 10px;
     margin-bottom: 30px;
     
@@ -84,7 +90,8 @@
       
       .category-name, .tag-name {
         @include relative-font-size(1.2);
-        font-weight: $base-font-weight * 1.5;
+        font-weight: $base-font-weight * 1.3;
+        margin: 0.85em 0 0.4em 0;
       }
       .category-post-list, .tag-post-list {
         margin-left: 1em;
@@ -92,6 +99,8 @@
           .post-date {
             color: #ccc;
             margin-right: 15px;
+            width: 8em;
+            display: inline-block;
           }
         }
       }

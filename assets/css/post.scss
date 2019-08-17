@@ -9,6 +9,7 @@
 }
 
 .contents {
+  font-family: $post-font-family;
   @extend %page-width;
   width: $content-width - 20px;
   margin-bottom: 40px;
@@ -34,9 +35,10 @@
 }
 
 .title {
-  @include relative-font-size(2);
+  @include relative-font-size(1.5);
   @extend %page-width;
-  letter-spacing: -1px;
+  letter-spacing: -0.025em;
+  font-family: $base-font-family;
 }
 
 .post-meta-info {
@@ -60,8 +62,13 @@
 }
 
 .content {
+  font-family: $post-font-family;
   @extend %page-width;
   margin-top: 40px;
+  
+  p {
+    color: #4a4a4a;
+  }
   
   .lang-label {
     text-align: right;
@@ -138,9 +145,16 @@
     }
   }
   
-  h2 {
+  h1, h2, h3, h4 {
+    font-family: $base-font-family;
     font-weight: $base-font-weight * 1.5;
-    @include relative-font-size(1.5);
+  }
+  
+  h2 {
+    border-bottom: solid 1px #ececec;
+    padding-bottom: 12px;
+    margin: 1.23em 0;
+    @include relative-font-size(1.7);
     &:before {
       content: "\a7\a0";
       vertical-align: baseline;
@@ -148,8 +162,11 @@
   }
   
   h3 {
-    font-weight: $base-font-weight * 1.5;
-    @include relative-font-size(1.2);
+    @include relative-font-size(1.4);
+  }
+  
+  h4 {
+    @include relative-font-size(1.1);
   }
   
   h2 + p, h3 + p, h4 + p, 
@@ -160,8 +177,8 @@
   }
   
   ol li, ul li {
-    list-style: decimal inside;
-    text-indent: 3em;
+    list-style: inside;
+    text-indent: 1em;
   }
   
   img {
@@ -190,11 +207,12 @@
   table {
     border-collapse: collapse;
     margin-bottom: 15px;
+    width: 100%;
     
     th {
-      @include relative-font-size(1.1);
+      @include relative-font-size(0.9);
       padding: 0.3em 0.5em;
-      font-weight: bolder;
+      font-weight: $base-font-weight * 1.2;
       color: white;
       background-color: $red-color;
     }
@@ -206,6 +224,7 @@
     }
     
     tbody {
+      @include relative-font-size(0.8);
       background-color: #fefefe;
       td {
         border-bottom: solid 1px #ddd;
