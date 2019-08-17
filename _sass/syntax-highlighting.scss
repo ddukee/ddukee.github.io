@@ -1,6 +1,6 @@
 .highlighter-rouge {
   @include relative-font-size(0.8);
-  font-weight: $base-font-weight * 1.5;
+  font-weight: $base-font-weight * 1.2;
   color: $red-color;
   background-color: #f9f2f4;
   border-radius: 3px;
@@ -9,7 +9,7 @@
 
 .highlight {
   background: #fff;
-  @include relative-font-size(0.7);
+  @include relative-font-size(0.8);
   @extend %vertical-rhythm;
 
   .highlighter-rouge & {
