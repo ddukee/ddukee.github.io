@@ -17,15 +17,16 @@ title: "Tech 101"
 author: "Duke"
 email: "740313507@qq.com"
 description: >- # this means to ignore newlines until "baseurl:"
-        Oops!
+        分享工作和学习过程中遇到的Java相关的知识~
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "http://ddukee.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+url: "http://tech101.cn" # the base hostname & protocol for your site.
 github_username:  ddukee
 rss: "RSS"
 paginate: 10
-paginate_path: "/post/:num/"
+paginate_path: "/page/:num/"
 truncate: 100
 encoding: utf-8
+permalink: /:year/:month/:day/:title
 
 # Build settings
 markdown: kramdown
@@ -34,6 +35,7 @@ plugins:
   - jekyll-feed
   - jekyll-paginate
   - jekyll-seo-tag
+  - jekyll-sitemap
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
