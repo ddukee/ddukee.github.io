@@ -62,12 +62,13 @@
 }
 
 .content {
+  $content-color: #4a4a4a;
   font-family: $post-font-family;
   @extend %page-width;
   margin-top: 40px;
   
   p {
-    color: #4a4a4a;
+    color: $content-color;
   }
   
   .lang-label {
@@ -148,6 +149,7 @@
   h1, h2, h3, h4 {
     font-family: $base-font-family;
     font-weight: $base-font-weight * 1.5;
+    margin-bottom: 0.5em;
   }
   
   h2 {
@@ -163,10 +165,12 @@
   
   h3 {
     @include relative-font-size(1.4);
+    margin-top: 1.5em
   }
   
   h4 {
     @include relative-font-size(1.1);
+    margin-top: 1.5em;
   }
   
   h2 + p, h3 + p, h4 + p, 
@@ -176,10 +180,14 @@
     word-break: normal;
   }
   
-  ol li, ul li {
-    list-style: inside;
-    text-indent: 1em;
+  ol, ul {
+    padding-left: 3em;
   }
+  
+  li {
+    color: $content-color;
+    list-style: outside;
+  } 
   
   img {
     display: block;
