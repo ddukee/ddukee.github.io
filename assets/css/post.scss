@@ -67,12 +67,13 @@
 }
 
 .content {
+  $content-color: #4a4a4a;
   font-family: $post-font-family;
   @extend %page-width;
   margin-top: 40px;
   
   p {
-    color: #4a4a4a;
+    color: $content-color;
   }
   
   .lang-label {
@@ -153,6 +154,7 @@
   h1, h2, h3, h4 {
     font-family: $base-font-family;
     font-weight: $base-font-weight * 1.5;
+    margin-bottom: 0.5em;
   }
   
   h2 {
@@ -168,10 +170,12 @@
   
   h3 {
     @include relative-font-size(1.4);
+    margin-top: 1.5em
   }
   
   h4 {
     @include relative-font-size(1.1);
+    margin-top: 1.5em;
   }
   
   h2 + p, h3 + p, h4 + p, 
@@ -181,10 +185,14 @@
     word-break: normal;
   }
   
-  ol li, ul li {
-    list-style: inside;
-    text-indent: 1em;
+  ol, ul {
+    padding-left: 3em;
   }
+  
+  li {
+    color: $content-color;
+    list-style: outside;
+  } 
   
   img {
     display: block;
@@ -198,13 +206,47 @@
     padding: 5px 10px;
     background-color: #eee;
     
+    li {
+      text-indent: 0em;
+    }
+    
+    dl {
+      & > dd {
+        text-indent: 0px;
+        padding-left: 3em;
+        margin-bottom: 0.5em;
+      }
+      & > dt {
+        font-weight: bold;
+      }
+    }
+    
     p {
-      margin: 0px;
+      margin: 0px 0px 1em 0px;
       padding: 0px;
+      text-indent: 0em;
       
-      &::first-letter {
+      &:first-child::first-letter {
         text-transform: uppercase;
         @include relative-font-size(1.5);
+      }
+    }
+  }
+  
+  .footnotes {
+    margin-top: 4em;
+    border-top: dashed 1px #aaa;
+    padding-top: 5px;
+    ol {
+      padding-left: 0px;
+      
+      li {
+        list-style-position: inside;
+        list-style-type: lower-roman;
+      }
+      
+      p {
+        display: inline-block;
       }
     }
   }
