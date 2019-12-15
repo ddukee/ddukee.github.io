@@ -234,6 +234,7 @@
   }
   
   .footnotes {
+    font-size: 0.8em;
     margin-top: 4em;
     border-top: dashed 1px #aaa;
     padding-top: 5px;
@@ -247,6 +248,7 @@
       
       p {
         display: inline-block;
+        margin-bottom: 3px;
       }
     }
   }
@@ -372,4 +374,16 @@
 @keyframes fadeout {
   from {top: 30px; opacity: 1;}
   to {top: 0; opacity: 0;}
+}
+
+.MathJax {
+  outline: 0;
+  span {
+    font-size: 13px;
+  }
+}
+
+.MathJax_Display {
+  overflow-x: auto;
+  overflow-y: hidden;
 }
