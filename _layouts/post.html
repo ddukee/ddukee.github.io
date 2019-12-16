@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <link rel="dns-prefetch" href="//cdn.bootcss.com" />
     <title>{{ site.title }}{{ page.title | prepend: " &dash; " }}</title>    
     {% include head.html %}
   </head>
@@ -54,4 +55,23 @@
     <div class="jump-top"><div><div class="arrow-up"></div></div><span>TOP</span></div>
   </body>
   {% include footer.html %}
+  
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      showProcessingMessages: false,
+      messageStyle: "none",
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'], ["\\(", "\\)"] ],
+        displayMath: [ ['$$', '$$'], ["\\[", "\\]"] ],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      "HTML-CSS": {
+        showMathMenu: false
+      },
+      displayAlign: "center"
+    });
+  </script>
+  <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 </html>
