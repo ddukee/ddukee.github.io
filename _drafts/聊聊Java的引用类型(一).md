@@ -1,0 +1,451 @@
+---
+layout: post
+title: 聊聊Java的引用类型（一）
+date: "2019-12-16 12:34:00 +0800"
+categories: java
+tags: java reference 垃圾回收
+published: true
+---
+
+## 前言
+
+Java在语言层面支持两种类型：**原始类型（primitive type）** 和 **引用类型（reference type）**。如果读者学过C语言的话，可以发现Java的引用类型类似于C语言里的指针类型。
+
+Java是一门带有垃圾回收功能的语言，当一个对象没有被引用的时候，垃圾回收器就可以把这个对象回收掉以释放占用的内存空间。这里，垃圾回收器判断一个对象有没有被引用的依据，就是检查一个对象是否有强引用。
+
+我们平时创建一个对象，比如：`Integer intA = new Integer(1);`，就是把在堆里创建的对象赋值给了`intA`这个引用类型。而这个引用类型在Java里面被称为强引用。那么既然我们说创建的对象的时候引用类型是强引用，那是不是还有弱引用的说法呢？
+
+确实，Java除了支持强引用之外，还支持弱引用，而且针对引用的强弱程度，弱引用类型还可以细分为：**软引用（SoftReference）**、**弱引用（WeakReference）** 和 **虚引用（PhantomReference）**。本文就来聊聊Java引入这几个弱引用的概念是干什么用的。
+
+## 四种引用
+### 强引用
+
+在Java中，普通的引用类型就是强引用，比如我们`new`一个新的对象并将这个对象的引用赋值给一个变量的时候，我们就对这个对象创建了一个强引用。Java是一门自带垃圾回收的语言，而垃圾收集器在收集垃圾内存的时候，就是通过判断一个对象是否有强引用关联，如果一个对象没有强引用关联，那么这个对象就会被垃圾回收器标记为垃圾，并在未来的GC周期中被回收掉。所以在Java中强引用是默认的，我们不需要显式创建对象的强引用，而弱引用就恰恰相反，它是一种需要我们显式指定的引用类型，并且和Java的垃圾回收机制息息相关。
+
+下面我们来看下Java四种引用类型中除强引用之外的三种弱引用类型。
+
+### 软引用
+首先介绍软引用，Java中的 **软引用** 也叫 **Soft reference**，由Java中的`SoftReference`表示。软引用和强引用的区别主要体现在：一个对象如果是 **软可达（Soft reachable）** 的，那么这个对象就可以在未来JVM内存不足抛出OOM前优先被垃圾回收掉，以释放被这些对象占用的空间。
+
+Java官方文档[^1]对Soft reachable的定义如下：
+
+> An object is softly reachable if it is not strongly reachable but can be reached by traversing a soft reference.
+
+通过定义可以看到，一个对象如果没有强引用关联，只有软引用关联，则这个对象就是 Soft reachable的。Soft reachable的对象，会一直存活到JVM内存不够的时候，所以SoftReference类型的一个使用场景就是用来做本地内存缓存实现。
+
+{% highlight java %}
+public SoftReference(T referent);
+public SoftReference(T referent, ReferenceQueue<? super T> q);
+public T get();
+{% endhighlight %}
+
+`SoftReference`类型提供了两个构造方法以及一个`get()`方法。一个对象如果要被软引用关联，可以将这个对象作为`SoftReference`构造函数的参数传入，这样构造的`SoftReference`对象就持有了这个对象的软引用。`SoftReference`中的第二个构造方法有一个`ReferenceQueue`类型的参数，这个参数的作用这里先放放，下面会专门讲引用队列`ReferenceQueue`的作用。当需要通过这个软引用对象获取被引用的对象的时候，可以通过`get()`方法获取，如果一个软引用关联的对象被垃圾回收了，那么调用`get()`方法将返回`null`值。
+
+下面是一个例子：
+
+{% highlight java %}
+public class Test {
+    public static void main(String ...args) {
+        byte[] hugeBlock1 = new byte[4 * 1024 * 1024]; // 4MB
+        SoftReference<byte[]> hugeBlockRef1 = new SoftReference<>(hugeBlock1);
+        hugeBlock1 = null;
+
+        byte[] hugeBlock2 = new byte[4 * 1024 * 1024]; // 4MB
+        SoftReference<byte[]> hugeBlockRef2 = new SoftReference<>(hugeBlock2);
+        hugeBlock2 = null;
+
+        byte[] hugeBlock3 = new byte[4 * 1024 * 1024]; // 4MB
+        SoftReference<byte[]> hugeBlockRef3 = new SoftReference<>(hugeBlock3);
+        hugeBlock3 = null;
+
+        byte[] hugeBlock4 = new byte[4 * 1024 * 1024]; // 4MB
+        SoftReference<byte[]> hugeBlockRef4 = new SoftReference<>(hugeBlock4);
+        hugeBlock4 = null;
+
+        System.out.println("hugeBlockRef1 = " + hugeBlockRef1.get());
+        System.out.println("hugeBlockRef2 = " + hugeBlockRef2.get());
+        System.out.println("hugeBlockRef3 = " + hugeBlockRef3.get());
+        System.out.println("hugeBlockRef4 = " + hugeBlockRef4.get());
+    }
+}
+{% endhighlight %}
+
+在代码中我们在堆中创建了4个4M大小的内存块，然后通过SoftReference引用这些对象，并且将这些对象的强引用都去掉，使得这4个对象都变成Soft reachable。然后在启动JVM的时候通过JVM参数`-Xmx10M`限制最大内存为10M，然后运行程序观察结果：
+
+{% highlight text %}
+hugeBlockRef1 = null
+hugeBlockRef2 = null
+hugeBlockRef3 = null
+hugeBlockRef4 = [B@610455d6
+{% endhighlight %}
+
+可以看到，由于`hugeBlock1`、`hugeBlock2`和`hugeBlock3`这3块内存加起来超过了10M，所以触发了`SoftReference`引用对象被回收的条件，导致调用`SoftReference`的`get()`方法的时候返回null。
+
+### 弱引用
+**弱引用** ，也叫 **Weak Reference**，在Java中通过`WeakReference`表示，是Java引入的另外一种引用类型。弱引用和强引用的主要区别是：一个对象即使有弱引用关联，如果这个对象是 **弱可达（Weakly reachable）的**，那么垃圾收集器在下一个GC周期就可以将这个对象回收掉；而WeakReference和SoftReference的主要区别就在于被引用对象的垃圾回收时机不同。Weak reachable的对象会在下一个GC周期被垃圾回收器回收掉，即使当前有足够的内存，而Soft reachable的对象只有当内存不够的时候才会触发回收，所以对于引用的强弱关系来说，SoftReference > WeakReference。
+
+那么，在什么情况下一个对象是Weakly reachable的呢，在Java的官方文档[^1]里是这样定义的：
+
+> An object is weakly reachable if it is neither strongly nor softly reachable but can be reached by traversing a weak reference. When the weak references to a weakly-reachable object are cleared, the object becomes eligible for finalization.
+
+也就是说，一个对象只要没有强引用关联和软引用关联，那么这个对象就是Weakly reachable。一个Weakly reachable的对象符合垃圾回收器标记为垃圾对象的条件，在未来将会被垃圾回收器回收。注意这里的措辞，一个Weakly reachable的对象并不会马上被垃圾收集器回收，只有在下次GC周期到来的时候才会尝试回收，而在回收的时候也不一定能保证回收掉，因为这里有一个 **finalize** 过程，也就是调用`Object.finalize()`方法对对象进行解构。在`Object.finalize()`方法中可能会将标记为垃圾的对象复活，这里我们先把finalize的内容放下，后面讲到虚引用`PhantomReference`的时候再回过头来讲下Java的finalize。
+
+和`SoftReference`引用一样，`WeakReference`引用类型也提供了2个构造方法和一个`get()`方法。用法和`SoftReference`一样，只是`get()`返回`null`的情况不同，也就是对象回收的时机不同。
+
+{% highlight java %}
+public WeakReference(T referent);
+public WeakReference(T referent, ReferenceQueue<? super T> q);
+public T get();
+{% endhighlight %}
+
+下面是WeakReference的例子：
+
+{% highlight java %}
+public class Test {
+    public static void main(String ...args) {
+        HugeBlock block = HugeBlock.sizeOf(4 * 1024 * 1024);
+        WeakReference<HugeBlock> hugeBlockRef1 = new WeakReference<>(block);
+        block = null;
+
+        System.out.println("Before trigger gc, hugeBlockRef1 = " + hugeBlockRef1.get());
+
+        System.gc(); // 触发GC
+
+        System.out.println("After trigger gc, hugeBlockRef1 = " + hugeBlockRef1.get());
+    }
+
+    private static class HugeBlock {
+        private byte[] block;
+
+        private HugeBlock(int size) {
+            this.block = new byte[size];
+        }
+
+        public static HugeBlock sizeOf(int size) {
+            return new HugeBlock(size);
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            super.finalize();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Byte Block [%d bytes]", block.length);
+        }
+    }
+}
+{% endhighlight %}
+
+输出结果：
+
+{% highlight text %}
+Before trigger gc, hugeBlockRef1 = Byte Block [4194304 bytes]
+After trigger gc, hugeBlockRef1 = null
+{% endhighlight %}
+
+这里，我们通过`System.gc()`主动触发JVM的minor gc。可以观察到在触发gc以后`WeakReference`引用的对象被垃圾回收了。我们没有对JVM加`-Xmx10M`的内存限制，但是由于`WeakReference`的特点，弱引用的对象还是会被垃圾回收掉了。
+
+### 虚引用
+**虚引用** 是Java四种引用类型中最特殊的一种引用类型，在Java中通过`PhantomReference`对象来表示。`PhantomReference`和`WeakReference`比较像，但是不同于`WeakReference`引用的对象只有当被引用的对象回收以后`get()`方法才返回`null`，`PhantomReference`引用的`get()`方法永远返回`null`，即使这个对象没有被垃圾回收器回收。这就是虚引用名字的由来，有时候又称之为 **幽灵引用**，因为这个引用对象不会返回被引用的对象，就像幽灵一样。
+
+同样的，一个对象如果满足Phantom reachable，那么这个对象就可以被垃圾回收器回收。Java官方文档[^1]对Phantom reachable的定义如下：
+
+> An object is phantom reachable if it is neither strongly, softly, nor weakly reachable, it has been finalized, and some phantom reference refers to it.
+
+一个对象如果既不是强引用，也不满足soft reachable和weakly reachable的条件，并且这个对象已经被解构（执行过`Object.finalize()`方法），并且有PhantomReference引用指向它，那么这个对象就被称为是Phantom reachable。
+
+这里需要注意的一点是，只有`PhantomReference`引用的对象，在达到Phantom reachable状态的时候，它的`Object.finalize()`是已经被执行过的。而对于前面说的`SoftReference`和`WeakReference`引用的对象，它们在达到Soft reachable或Weakly reachable状态的时候，虽然表示可以被垃圾回收器回收，但是它们的`Object.finalize()`方法还没执行，而且他们的`Object.finalize()`可能永远不会被执行，在后面介绍`Object.finalize()`方法的时候你将看到这一点。这个是`PhantomReference`和`WeakReference`之间的第二大区别，同时也是`PhantomReference`和其他两个引用类型之间最重要的区别。
+
+{% highlight java %}
+public T get();
+public PhantomReference(T referent, ReferenceQueue<? super T> q);
+{% endhighlight %}
+
+可以发现`PhantomReference`不像`WeakReference`一样有两个版本的构造函数，`PhantomReference`的构造函数只有一个。由于`PhantomReference`的`get()`方法不管被引用的对象有没有被回收返回的都是`null`，所以`PhantomReference`必须需要配合`ReferenceQueue`一起来使用。
+
+我们已经介绍完了Java中的4种引用类型.下面，我们来介绍下引用队列`ReferenceQueue`以及它的用途。
+
+## 引用队列
+
+介绍了4种引用类型，你可能会问Java引入强引用之外的3种引用类型的目的是什么？对于`SoftReference`和`WeakReference`来说，我们通过检查`get()`的返回值是否为`null`来判断对象可能被垃圾回收了。但是对于`PhantomReference`来说，由于它的`get()`方法返回的永远是`null`，所以我们单纯使用`PhantomReference`好像并不能做任何事。
+
+其实，Java引入这三种引用类型的目的是为了让开发人员可以感知到Java垃圾回收器的行为，配合垃圾回收器管理Java中创建的对象。而怎么和垃圾回收器联系起来，就是我们将要提到的引用队列`ReferenceQueue`。
+
+前面在介绍引用类型的时候，我们提到针对不同的引用类型，当引用的对象达到不同的状态的时候就会被垃圾回收器回收。比如：对于`SoftReference`引用的对象，当被引用的对象达到soft reachable的时候，在未来的某个时间就会被垃圾回收器回收。有时候，我们希望垃圾回收器回收对象的时候可以通知应用程序，告诉它：“你的对象被我回收了”，这个时候，`ReferenceQueue`就可以派上用场了（当然，如果没有`ReferenceQueue`，对于`WeakReference`和`SoftReference`来说，要知道对象什么时候被回收也不是难事，只要检查`get()`的返回值是否为`null`就可以了，但是对于`PhantomReference`来说就办不到了）。
+
+当垃圾回收器发现引用的对象可以被回收的时候，会将这些对象放到`ReferenceQueue`中。应用程序通过轮询`ReferenceQueue`就可以知道哪个引用的对象被回收了。将前面介绍的三种引用类型配合引用队列，应用程序就可以感知到对象什么时候被垃圾回收器回收，然后实现一些逻辑。比如`WeakHashMap`的实现中，对过期entry的淘汰就依赖于`ReferenceQueue`，还有`ThreadLocal`中的哈希表也有类似的实现。
+
+当通过前面介绍的3种引用类型引用的对象达到对应的可达性阶段以后，如果这个引用是被注册的（也就是提供了引用队列），那么垃圾回收器在回收前会将这个引用对象（注意，不是被回收的对象，是引用对象。所以引用对象其实是一个句柄或者凭证，标识被回收的对象）放到`ReferenceQueue`中。放到`ReferenceQueue`中的引用，调用它的`get()`方法只会返回`null`。
+
+对于不同的引用类型，引用对象被放到`ReferenceQueue`的时机是不同的。对于`SoftReference`来说，当被引用的对象是soft reachable的时候，该对象的引用对象会在未来JVM内存不够触发GC的时候被放到`ReferenceQueue`中，同时在入队前会将该引用对象对被引用对象的引用去掉。对于`WeakReference`来说，当被引用的对象的状态是weakly reachable的时候，该引用对象会在下一次GC的时候被放入`ReferenceQueue`，和`SoftReference`一样，在入队前会将该引用对象对被引用对象的引用去掉。
+
+![reference_01](/assets/images/reference_01.png){:width="50%" hight="50%"}
+
+`PhantomReference`引用的对象在对象达到phantom reachable的时候会将该引用对象入队，但是`PhantomReference`在JDK9之前比较特殊：它在入队的时候不会将对被引用对象的引用去掉，虽然通过`PhantomReference`的`get()`方法拿不到被引用的对象。在JDK9[^2]中做了修改，`PhantomReference`入队的逻辑和前面两个引用类型一样，在入队前会将被引用对象的`PhantomReference`引用去掉。
+
+> Soft and weak references are automatically-cleared references (i.e. these references are cleared by the collector before it's enqueued) whereas phantom reference is not an automatically-cleared reference.  Instead, the get method of a phantom reference always returns null to ensure that the referent of a phantom reference may not be retrieved.
+>
+> This proposes to make phantom references automatically-cleared reference as soft and weak references do.[^2]
+
+
+下面通过`WeakReference`配合`ReferenceQueue`来介绍下引用队列是如何使用的。
+
+{% highlight java %}
+public class Test {
+    public static void main(String ...args) throws Exception {
+        ReferenceQueue<HugeBlock> queue = new ReferenceQueue<>();
+        HugeBlock block = HugeBlock.sizeOf(4 * 1024 * 1024);
+        WeakReference<HugeBlock> hugeBlockRef1 = new WeakReference<>(block, queue);
+        block = null;
+
+        System.out.println("Before trigger gc, hugeBlockRef1 = " + hugeBlockRef1 + ", hugeBlockRef.get() = " + hugeBlockRef1.get());
+
+        System.gc(); // 触发GC
+
+        System.out.println("After trigger gc, hugeBlockRef1 = " + hugeBlockRef1 + ", hugeBlockRef.get() = " + hugeBlockRef1.get());
+
+        Reference<? extends HugeBlock> ref = queue.remove();
+        System.out.println("Get ref from queue: " + ref);
+    }
+
+    private static class HugeBlock {
+        private byte[] block;
+
+        private HugeBlock(int size) {
+            this.block = new byte[size];
+        }
+
+        public static HugeBlock sizeOf(int size) {
+            return new HugeBlock(size);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Byte Block [%d bytes]", block.length);
+        }
+    }
+}
+
+{% endhighlight %}
+
+输出结果：
+
+{% highlight text %}
+Before trigger gc, hugeBlockRef1 = java.lang.ref.WeakReference@610455d6, hugeBlockRef.get() = Byte Block [4194304 bytes]
+After trigger gc, hugeBlockRef1 = java.lang.ref.WeakReference@610455d6, hugeBlockRef.get() = null
+Get ref from queue: java.lang.ref.WeakReference@610455d6
+{% endhighlight %}
+
+可以看到，在创建`WeakReference`对象的时候传入`queue`，在通过`System.gc()`触发GC的时候我们可以从`queue`中取到被标记为回收的对象（需要注意的是，对于`WeakReference`来说，一个对象的`WeakReference`引用放入引用队列并不代表这个对象已经被GC了，只是说这个对象满足weak reachable的条件，这个对象是否被垃圾回收器GC，什么时候执行GC都是未确定的，有时候可能这个对象根本就没有被垃圾回收掉，比如在后面介绍finalize()的时候你将会看到一个对象是如何在进入了引用队列以后又可以存活在JVM中的）。
+
+## 虚引用和finalize( )
+
+Java不像C++那样有析构函数，因为Java是支持垃圾回收的语言，所以一般情况下并不需要析构函数的概念。但是Java的`Object`类上有一个`finalize()`方法，在对象被回收的时候垃圾回收器会执行这个`finalize()`方法，很多开发者会将这个方法认为是Java的析构函数，通过在类中重载`finalize()`方法来实现具体的析构逻辑。但是`finalize()`方法的行为可能并不是大家想当然的那样在对象被回收的时候就执行。
+
+### finalize( )的缺陷
+
+首先，JVM并不能保证方法的`finalize()`方法什么时候会被执行。唯一可以确定的是，当垃圾回收器发现一个对象不可达的以后（在第一轮GC周期的时候），会将这个对象放入一个finalize队列中，由另外一个线程从队列中读取这个对象并执行它的`finalize()`方法，当一个对象的`finalize()`方法被执行完成以后，会再次进行第二轮的GC，以检查执行完`finalize()`方法以后的这个对象是否还可达。
+
+这里垃圾回收器要对被回收的对象检查两轮是有原因的，因为一个对象的实现者可以在`finalize()`方法中重新对这个对象创建一个强引用，导致这个本来应该被回收的对象又复活了。所以垃圾回收器需要在执行完`finalize()`方法以后再次检查对象的可达性，如果这个对象被复活，那么这个对象就不能被回收。由于JVM中规定一个对象的`finalize()`只能被执行一次，所以对象在下次GC的时候将不会执行它的`finalize()`方法。所以，不正确的`finalize()`实现可能会导致内存泄露。由于`finalize()`方法存在这个问题，官方不建议通过实现`finalize()`来做资源清理工作。
+
+`finalize()`除了刚才介绍的这个问题，更要命的是JVM不能保证对象的`finalize()`方法一定执行，JVM可能直到退出也没有执行对象的`finalize()`方法。虽然JVM提供了`System.runFinalization()`、`System.runFinalizersOnExit()`以及`Runtime.runFinalizersOnExit()`方法来告知JVM执行对象的`finalize()`方法，但是仍旧存在不执行的情况，而且这些方法由于存在潜在的安全问题和死锁分享已经被废弃了。另一方面，由于`finalize()`方法是在GC阶段被执行的，所以如果在`finalize()`的实现中包含了耗时的阻塞操作，会导致GC时间变长。
+
+除了上面我们列举的一些点，`finalize()`还存在一些其他的问题，所以我们不建议通过`finalize()`来实现资源释放，如果要编写资源释放逻辑，更好的方案是使用后面会讲到的`PhantomReference`配合上`ReferenceQueue`来实现，不过在这之前，我们先来看一个有意思的问题。
+
+我们前面介绍了当一个注册的`WeakReference`（构造的时候提供了`ReferenceQueue`）指向的对象变成weakly reachable的时候，这个引用对象就会被放入引用队列中。而从weakly reachable的定义看，一个对象如果没有强引用和软引用只有弱引用，这个对象就会变weakly reachable，这个时候这个对象的弱引用对象就会被放到队列中，并删除指向这个被引用对象的弱引用。在未来的某个时间点这个被引用对象会进入GC流程，也就是上面提到的2次GC检查和执行`finalize()`方法。基于这个weakly reference定义，我们就可以发现一个有意思的事情：就是前面提到的，这个对象的弱引用已经进入队列了，但是这个对象最后却仍旧存活在JVM中。下面来是例子：
+
+{% highlight java %}
+public class Test {
+    public static void main(String ...args) throws Exception {
+        ReferenceQueue<HugeBlock> queue = new ReferenceQueue<>();
+        HugeBlock block = HugeBlock.sizeOf(4 * 1024 * 1024);
+        WeakReference<HugeBlock> hugeBlockRef1 = new WeakReference<>(block, queue);
+        block = null;
+
+        System.out.println("Before trigger gc, hugeBlockRef1 = " + hugeBlockRef1 + ", hugeBlockRef.get() = " + hugeBlockRef1.get());
+
+        System.gc(); // 触发GC
+
+        System.out.println("After trigger gc, hugeBlockRef1 = " + hugeBlockRef1 + ", hugeBlockRef.get() = " + hugeBlockRef1.get());
+
+        Reference<? extends HugeBlock> ref = queue.remove();
+        System.out.println("Get ref from queue: " + ref);
+
+        Thread.sleep(1000); // finalize是异步执行的，需要等一段时间
+        System.out.println("After run finalize, block = " + HugeBlock.saved);
+    }
+
+    private static class HugeBlock {
+        public static HugeBlock saved;
+
+        private byte[] block;
+
+        private HugeBlock(int size) {
+            this.block = new byte[size];
+        }
+
+        public static HugeBlock sizeOf(int size) {
+            return new HugeBlock(size);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Byte Block [%d bytes]", block.length);
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            super.finalize();
+
+            System.out.println("Run finalize()");
+            saved = this;
+        }
+    }
+}
+{% endhighlight %}
+
+输出结果：
+
+{% highlight text %}
+Before trigger gc, hugeBlockRef1 = java.lang.ref.WeakReference@610455d6, hugeBlockRef.get() = Byte Block [4194304 bytes]
+After trigger gc, hugeBlockRef1 = java.lang.ref.WeakReference@610455d6, hugeBlockRef.get() = null
+Run finalize()
+Get ref from queue: java.lang.ref.WeakReference@610455d6
+After run finalize, block = Byte Block [4194304 bytes]
+{% endhighlight %}
+
+可以看到，当我们把`block`对象变成weakly reachable以后，触发GC使得对`block`对象的弱引用`hugeBlockRef1`被放入引用队列`queue`中，但是由于我们重载了`HugeBlock`的`finalize()`方法，导致在执行`finalize()`的时候`block`对象被复活了。但是`hugeBlockRef1`已经被放入到了`queue`中。
+
+由于weakly reachable的定义（当然也包括soft reachable），我们不能通过从队列中读取引用对象来确认对象在未来一定被GC。那有没有办法保证，只要引用对象进入队列，就可以确认这个对象不会被复活，在未来一定会被GC掉呢？那这个就需要用到我们一直放在一边的`PhantomReference`了。
+
+### 使用虚引用
+
+我们知道一个对象如果变成phantom reachable，这个对象就会被放入`ReferenceQueue`。而对于phantom reachable的定义，满足的条件中和其他两个引用最大的区别就是在phantom reachable的达成条件中多了一个：对象必须是已经执行完`finalize()`方法并且除了虚引用之外没有任何引用的。也就是说，如果一个本来不可达的对象在`finalize()`中复活以后，它就不满足`PhantomReference`的进队条件，不像`WeakReference`和`SoftReference`那样是先进队后执行`finalize()`方法。这就可以保证从引用队列中取出的虚引用对象，它原先指向的对象肯定是没有复活的可能了，而且`PhantomReference`的`get()`方法永远返回`null`，我们可以放心地释放对象对应的资源，只要这个资源和这个虚引用对象之间建立一个关联就可以了。
+
+{% highlight java %}
+public class Test {
+    public static void main(String ...args) throws Exception {
+        ReferenceQueue<HugeBlock> queue = new ReferenceQueue<>();
+        HugeBlock block = HugeBlock.sizeOf(4 * 1024 * 1024);
+        PhantomReference<HugeBlock> hugeBlockRef1 = new PhantomReference<>(block, queue);
+        block = null;
+
+        System.out.println("Before trigger gc, hugeBlockRef1 = " + hugeBlockRef1 + ", hugeBlockRef.get() = " + hugeBlockRef1.get());
+
+        System.gc(); // 触发GC
+
+        System.out.println("After trigger gc, hugeBlockRef1 = " + hugeBlockRef1 + ", hugeBlockRef.get() = " + hugeBlockRef1.get());
+        
+        System.gc(); // 再次触发GC，因为执行完finalize()方法以后，需要在下一个GC周期中检查对象是否是存活状态的
+
+        Reference<? extends HugeBlock> ref = queue.remove();
+        System.out.println("Get ref from queue: " + ref);
+    }
+
+    private static class HugeBlock {
+        private byte[] block;
+
+        private HugeBlock(int size) {
+            this.block = new byte[size];
+        }
+
+        public static HugeBlock sizeOf(int size) {
+            return new HugeBlock(size);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Byte Block [%d bytes]", block.length);
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            super.finalize();
+            System.out.println("Run finalize()");
+        }
+    }
+}
+{% endhighlight %}
+
+输出结果：
+
+{% highlight text %}
+Before trigger gc, hugeBlockRef1 = java.lang.ref.PhantomReference@610455d6, hugeBlockRef.get() = null
+Run finalize()
+After trigger gc, hugeBlockRef1 = java.lang.ref.PhantomReference@610455d6, hugeBlockRef.get() = null
+Get ref from queue: java.lang.ref.PhantomReference@610455d6
+{% endhighlight %}
+
+代码中我们触发了两次`System.gc()`，因为前面提到了垃圾回收器需要在执行完`finalize()`以后再次检查对象是否可达，如果对象却是不可达，那么引用对象就会被入队。我们可以尝试下在`finalize()`方法中将对象复活：
+
+{% highlight java %}
+public class Test {
+    public static void main(String ...args) throws Exception {
+        ReferenceQueue<HugeBlock> queue = new ReferenceQueue<>();
+        HugeBlock block = HugeBlock.sizeOf(4 * 1024 * 1024);
+        PhantomReference<HugeBlock> hugeBlockRef1 = new PhantomReference<>(block, queue);
+        block = null;
+
+        System.out.println("Before trigger gc, hugeBlockRef1 = " + hugeBlockRef1 + ", hugeBlockRef.get() = " + hugeBlockRef1.get());
+
+        System.gc(); // 触发GC
+
+        System.out.println("After trigger gc, hugeBlockRef1 = " + hugeBlockRef1 + ", hugeBlockRef.get() = " + hugeBlockRef1.get());
+        
+        System.gc(); // 再次触发GC，因为执行完finalize()方法以后，需要在下一个GC周期中检查对象是否是存活状态的
+
+        Reference<? extends HugeBlock> ref = queue.remove();
+        System.out.println("Get ref from queue: " + ref);
+    }
+
+    private static class HugeBlock {
+        public static HugeBlock saved;
+
+        private byte[] block;
+
+        private HugeBlock(int size) {
+            this.block = new byte[size];
+        }
+
+        public static HugeBlock sizeOf(int size) {
+            return new HugeBlock(size);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Byte Block [%d bytes]", block.length);
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            super.finalize();
+            System.out.println("Run finalize()");
+
+            saved = this; // 复活对象
+        }
+    }
+}
+{% endhighlight %}
+
+输出结果：
+
+{% highlight text %}
+Before trigger gc, hugeBlockRef1 = java.lang.ref.PhantomReference@610455d6, hugeBlockRef.get() = null
+After trigger gc, hugeBlockRef1 = java.lang.ref.PhantomReference@610455d6, hugeBlockRef.get() = null
+Run finalize()
+{% endhighlight %}
+
+当执行这段代码的时候，我们会发现JVM阻塞在了`queue.remove();`上，因为对象`block`在执行完`finalize()`以后仍旧存活，所以它的引用对象不会被入队，导致`queue.remove()`操作阻塞。同样，我们也可以将上面第二个`System.gc()`去掉，这样由于达不到2次GC的条件（前提是内存足够，不会触发GC），所以我们仍旧拿会阻塞在`queue.remove()`调用上，这里就不放代码了，感兴趣的同学可以自己试试。
+
+相对于Java的`Object.finalize()`，使用`PhantomReference`加`ReferenceQueue`可以给开发者提供更加灵活的资源释放方案，而且引用对象入队是异步的，资源释放不会影响到垃圾回收的过程，同时使用引用队列使得实现了资源清理的代码和垃圾回收器之间松耦合。
+
+## 总结
+
+到这里，我们大致已经介绍完了Java中四种引用类型，重点介绍了软弱虚三种引用类型的概念和作用。通过介绍Java中`finalize()`方法的缺陷，引出`PhantomReference`这种特殊的引用类型是如何配合引用队列来代替`finalize()`工作的。
+
+
+[^1]: [https://docs.oracle.com/javase/8/docs/api/java/lang/ref/package-summary.html#reachability](https://docs.oracle.com/javase/8/docs/api/java/lang/ref/package-summary.html#reachability)
+
+[^2]: [https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8071507](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8071507)
