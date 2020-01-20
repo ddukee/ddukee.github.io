@@ -76,6 +76,17 @@
     color: $content-color;
   }
   
+  dl {
+    & > dd {
+      text-indent: 0px;
+      padding-left: 2em;
+      margin-bottom: 1em;
+    }
+    & > dt {
+      font-weight: bold;
+    }
+  }
+  
   .lang-label {
     text-align: right;
     font-weight: inherit;
