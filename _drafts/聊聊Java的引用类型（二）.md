@@ -1,0 +1,301 @@
+---
+layout: post
+title: 聊聊Java的引用类型（二）
+date: "2019-12-25 00:33:00 +0800"
+categories: java
+tags: java reference 垃圾回收
+published: true
+---
+
+## 前言
+
+在之前的文章《聊聊Java的引用类型（一）》中，我们已经介绍了Java中的四种引用类型。在本文中，我们将深入Java的`Reference`源码实现，看看Java的`Reference`和`ReferenceQueue`以及垃圾回收器之间是如何协作，使`Reference`对象进入`ReferenceQueue`。
+
+## Reference
+
+前文介绍的`SoftReference`、`WeakReference`以及`PhantomReference`都继承了`Reference`类。在`Reference`类中定义了两个队列，用于处理引用对象和`ReferenceQueue`之间的交互。为了确定一个引用对象什么时候进入队列，`Reference`中定义了四种状态：`Active`、`Pending`、`Enqueued`、`Inactive`。
+
+Active
+: 被标记为active状态的引用对象会被垃圾回收器识别并处理。当垃圾回收器确定这个引用对象的状态发生变更的时候，会将这个引用对象的状态变更到合适的状态，比如：pending状态或者inactive状态。状态转换成pending还是inactive取决于引用对象在创建的时候是否注册了引用队列。新创建的引用对象状态默认是active。
+
+Pending
+: 被放入pending-reference队列的对象，等待被reference-handler线程入队。对于未注册（创建的时候没有指定引用队列）的引用对象，不会进入这个状态。
+
+Enqueued
+: 已经入队的注册引用对象的状态是enqueued，当对象从引用队列中删除以后会进入inactive状态。对于未注册的引用对象，不会进入这个状态。
+
+Inactive
+: 最终状态，当一个对象进入inactive状态以后，就进入终态，状态不会再变化。
+
+![状态转换](/assets/images/reference_2_01.png){:width="55%" hight="55%"}
+
+`Reference`类本身没有直接表示这些状态，而是通过两个字段`queue`和`next`来编码这些状态。每个状态和这两个字段之间的对应关系如下：
+
+![状态编码](/assets/images/reference_2_02.png){:width="65%" hight="65%"}
+
+为了让并发执行的垃圾收集器可以不依赖于应用程序中的进队处理线程，`Reference`还引入了一个`discovered`成员变量。当垃圾收集器发现了处于active状态的应用对象的时候，会将这些引用对象放入`discovered`维护的列表中。`Reference`除了使用`discovered`来维护active状态的引用对象，它还被复用来维护pending状态下的引用对象的pending列表。
+
+## Pending处理线程
+
+前面提到，垃圾收集器通过`discovered`成员变量维护 **active** 状态的引用对象列表。当垃圾回收器发现某个引用对象指向的实际对象变成某种可达性（在《聊聊Java的引用类型（一）》中提到的三种可达性）以后，如果这个引用对象在创建的时候注册了`ReferenceQueue`，则会将这个引用对象从`discovered`列表中摘除，并放到 **pending 列表** 中。
+
+{% highlight java %}
+/* When active:   next element in a discovered reference list maintained by GC (or this if last)
+ *     pending:   next element in the pending list (or null if last)
+ *   otherwise:   NULL
+ */
+transient private Reference<T> discovered;  /* used by VM */
+
+/* List of References waiting to be enqueued.  The collector adds
+ * References to this list, while the Reference-handler thread removes
+ * them.  This list is protected by the above lock object. The
+ * list uses the discovered field to link its elements.
+ */
+private static Reference<Object> pending = null;
+{% endhighlight %}
+
+`Reference`通过`pending`静态成员变量指向 **pending** 列表，通过复用`discovered`成员来维护 **pending列表**。
+
+![pending-list](/assets/images/reference_2_04.png){:width="50%" hight="50%"}
+
+在`Reference`中通过一个 **pending列表** 处理线程从 **pending列表** 中取出处于 **pending** 状态的引用对象并由这个线程调用引用对象的`enqueue()`方法入队。下面是具体的源码：
+
+**pending列表** 处理线程 `ReferenceHandler`通过静态初始化并启动，启动的代码在`Reference`中：
+
+{% highlight java %}
+static {
+    ThreadGroup tg = Thread.currentThread().getThreadGroup();
+    for (ThreadGroup tgn = tg;
+         tgn != null;
+         tg = tgn, tgn = tg.getParent());
+    Thread handler = new ReferenceHandler(tg, "Reference Handler");
+    /* If there were a special system-only priority greater than
+     * MAX_PRIORITY, it would be used here
+     */
+    handler.setPriority(Thread.MAX_PRIORITY);
+    handler.setDaemon(true);
+    handler.start();
+
+    // provide access in SharedSecrets
+    SharedSecrets.setJavaLangRefAccess(new JavaLangRefAccess() {
+        @Override
+        public boolean tryHandlePendingReference() {
+            return tryHandlePending(false);
+        }
+    });
+}
+{% endhighlight %}
+
+`ReferenceHandler`的实现如下：
+
+{% highlight java %}
+private static class ReferenceHandler extends Thread {
+
+    private static void ensureClassInitialized(Class<?> clazz) {
+        try {
+            Class.forName(clazz.getName(), true, clazz.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw (Error) new NoClassDefFoundError(e.getMessage()).initCause(e);
+        }
+    }
+
+    static {
+        // pre-load and initialize InterruptedException and Cleaner classes
+        // so that we don't get into trouble later in the run loop if there's
+        // memory shortage while loading/initializing them lazily.
+        ensureClassInitialized(InterruptedException.class);
+        ensureClassInitialized(Cleaner.class);
+    }
+
+    ReferenceHandler(ThreadGroup g, String name) {
+        super(g, name);
+    }
+
+    public void run() {
+        while (true) {
+            tryHandlePending(true);
+        }
+    }
+}
+{% endhighlight %}
+
+在`ReferenceHandler`的`run()`方法中，调用`tryHandlePending(true)`执行具体的 **pending列表** 处理逻辑：
+
+{% highlight java %}
+static boolean tryHandlePending(boolean waitForNotify) {
+        Reference<Object> r;
+        Cleaner c;
+        try {
+            synchronized (lock) {
+                if (pending != null) {
+                    r = pending;
+                    // 'instanceof' might throw OutOfMemoryError sometimes
+                    // so do this before un-linking 'r' from the 'pending' chain...
+                    c = r instanceof Cleaner ? (Cleaner) r : null;
+                    // unlink 'r' from 'pending' chain
+                    pending = r.discovered;
+                    r.discovered = null;
+                } else {
+                    // The waiting on the lock may cause an OutOfMemoryError
+                    // because it may try to allocate exception objects.
+                    if (waitForNotify) {
+                        lock.wait();
+                    }
+                    // retry if waited
+                    return waitForNotify;
+                }
+            }
+        } catch (OutOfMemoryError x) {
+            // Give other threads CPU time so they hopefully drop some live references
+            // and GC reclaims some space.
+            // Also prevent CPU intensive spinning in case 'r instanceof Cleaner' above
+            // persistently throws OOME for some time...
+            Thread.yield();
+            // retry
+            return true;
+        } catch (InterruptedException x) {
+            // retry
+            return true;
+        }
+
+        // Fast path for cleaners
+        if (c != null) {
+            c.clean();
+            return true;
+        }
+
+        ReferenceQueue<? super Object> q = r.queue;
+        if (q != ReferenceQueue.NULL) q.enqueue(r);
+        return true;
+    }
+{% endhighlight %}
+
+处理过程也比较清晰，首先判断`pending`静态变量是否为`null`，如果为`null`则表示当前没有需要处理的 **pending** 对象，调用`lock.wait()`方法等待被垃圾回收器通知。如果 **pending列表** 不为空，则将 **pending列表** 中头部的引用对象取出，并将`pending`指针指向由`discovered`维护的下一个 **pending** 对象。然后获取引用对象`r`所注册的引用队列`r.queue`，调用`q.enqueued()`方法进行入队操作。正是通过这个 **pending列表** 处理线程打通了垃圾回收器和应用程序代码之间的联系，通过引用队列实现交互。
+
+下面，我们来介绍下`ReferenceQueue`这个队列是如何实现入队和出队操作的。
+
+## ReferenceQueue
+
+`ReferenceQueue`和`Reference`是联系最紧密的两个类，虽然`ReferenceQueue`从名字上看是一个队列，但是实际上`ReferenceQueue`实现的队列结构和我们通常了解到的队列还有点不一样，`ReferenceQueue`队列的实现依赖于`Reference`类。下面，我们来看下`ReferenceQueue`是如何实现队列的。
+
+在`ReferenceQueue`中实现了四个队列操作方法，分别对应了一个入队操作`enqueue`以及两个出队操作`poll`和`remove`。
+
+{% highlight java %}
+boolean enqueue(Reference<? extends T> r);
+public Reference<? extends T> poll();
+public Reference<? extends T> remove(long timeout) throws IllegalArgumentException, InterruptedException;
+public Reference<? extends T> remove();
+{% endhighlight %}
+
+首先来看下`ReferenceQueue`的入队操作`enqueue`的实现：
+
+{% highlight java %}
+boolean enqueue(Reference<? extends T> r) { /* Called only by Reference class */
+    synchronized (lock) {
+        // Check that since getting the lock this reference hasn't already been
+        // enqueued (and even then removed)
+        ReferenceQueue<?> queue = r.queue;
+        if ((queue == NULL) || (queue == ENQUEUED)) {
+            return false;
+        }
+        assert queue == this;
+        r.queue = ENQUEUED;
+        r.next = (head == null) ? r : head;
+        head = r;
+        queueLength++;
+        if (r instanceof FinalReference) {
+            sun.misc.VM.addFinalRefCount(1);
+        }
+        lock.notifyAll();
+        return true;
+    }
+}
+{% endhighlight %}
+
+可以看到，在`ReferenceQueue`中，实际并没有一个队列数据结构来承载`Reference`对象，而是通过操作`Reference`对象的`next`域指针以及维护一个`head`头指针来表示队列。通过正确设置`Reference`对象的`queue`成员变量的值来表示引用对象当前是在队列中还是已经出队。如果引用对象还未在队列中，则`Reference`对象的`queue`字段值为引用对象注册的`ReferenceQueue`对象的实例；如果引用对象已经入队，则`queue`的值为`ENQUEUED`常量，通过修改`ReferenceQueue`的`head`值来将引用对象入队。
+
+![队列操作](/assets/images/reference_2_05.png){:width="40%" hight="40%"}
+
+引用对象入队以后，通过`lock`的`notifyAll()`方法唤醒所有阻塞在`remove()`方法上的应用程序线程。`remove()`方法的实现如下：
+
+{% highlight java %}
+public Reference<? extends T> remove() throws InterruptedException {
+    return remove(0);
+}
+
+public Reference<? extends T> remove(long timeout)
+    throws IllegalArgumentException, InterruptedException
+{
+    if (timeout < 0) {
+        throw new IllegalArgumentException("Negative timeout value");
+    }
+    synchronized (lock) {
+        Reference<? extends T> r = reallyPoll();
+        if (r != null) return r;
+        long start = (timeout == 0) ? 0 : System.nanoTime();
+        for (;;) {
+            lock.wait(timeout);
+            r = reallyPoll();
+            if (r != null) return r;
+            if (timeout != 0) {
+                long end = System.nanoTime();
+                timeout -= (end - start) / 1000_000;
+                if (timeout <= 0) return null;
+                start = end;
+            }
+        }
+    }
+}
+{% endhighlight %}
+
+`remove()`方法有两个实现版本：一个是阻塞超时版本，一个是永久阻塞版本。`remove()`的内部实现通过`lock`的`wait()`方法和`enqueue()`方法进行线程间同步。所以实际上`remove()`和`enqueue()`实现的是一个 **生产者-消费者** 模型。
+
+![生产者-消费者模型](/assets/images/reference_2_03.png){:width="55%" hight="55%"}
+
+`remove()`内部通过`reallyPoll()`来实现出队操作：
+
+{% highlight java %}
+private Reference<? extends T> reallyPoll() {       /* Must hold lock */
+    Reference<? extends T> r = head;
+    if (r != null) {
+        head = (r.next == r) ?
+            null :
+            r.next; // Unchecked due to the next field having a raw type in Reference
+        r.queue = NULL;
+        r.next = r;
+        queueLength--;
+        if (r instanceof FinalReference) {
+            sun.misc.VM.addFinalRefCount(-1);
+        }
+        return r;
+    }
+    return null;
+}
+{% endhighlight %}
+
+通过设置引用对象的`queue = NULL`以及修改`head`的值将引用对象出队。通过分析`reallyPoll()`方法和`enqueue()`方法，会发现虽然`ReferenceQueue`名字叫队列，实际操作的时候修改`head`值的过程是一个出入栈的操作。
+
+`poll()`方法比较简单，内部通过调用`reallyPoll()`来实现，是`remove()`的非阻塞版本。
+
+{% highlight java %}
+public Reference<? extends T> poll() {
+    if (head == null)
+        return null;
+    synchronized (lock) {
+        return reallyPoll();
+    }
+}
+{% endhighlight %}
+
+到这里，差不多已经回答了引用对象是怎么被放入`ReferenceQueue`的，下面是给出整个过程的图示：
+
+![整个流程](/assets/images/reference_2_06.png)
+
+## 总结
+
+本文主要介绍了Java的实现是如何将`Reference`对象放入引用队列`ReferenceQueue`中的，结合上一篇《聊聊Java的引用类型（一）》，我们从概念到使用再到原理介绍了Java的`Reference`类和三种特殊的引用类型。
+
+
+
+
+
