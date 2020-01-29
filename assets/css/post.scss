@@ -71,11 +71,20 @@
   font-family: $post-font-family;
   @extend %page-width;
   margin-top: 40px;
-  
+
   p {
     color: $content-color;
+    a {
+      text-decoration: underline;
+    }
   }
   
+  .footnotes {
+    a {
+      text-decoration: inherit;
+    }
+  }
+
   dl {
     & > dd {
       text-indent: 0px;
