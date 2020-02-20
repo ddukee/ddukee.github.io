@@ -309,7 +309,7 @@ private void set(ThreadLocal<?> key, Object value) {
 
 ![set](/assets/images/thread_local_05.png){:width="85%" hight="85%"}
 
-最后，通过`cleanSomeSlots()`对哈希表做一次清理并检查清理后的哈希表中现有entry的数量是否超过阀值`threshold`，如果超过阀值则调用`rehash()`进行扩容和重新哈希。
+最后，通过`cleanSomeSlots()`对哈希表做一次清理并检查清理后的哈希表中现有entry的数量是否超过阈值`threshold`，如果超过阈值则调用`rehash()`进行扩容和重新哈希。
 
 我们先来分析下`replaceStaleEntry()`替换废弃entry的逻辑。代码如下：
 
@@ -476,7 +476,7 @@ private void expungeStaleEntries() {
 }
 {% endhighlight %}
 
-`rehash()`的逻辑分为两块，先是通过`expungeStaleEntries()`将哈希表中所有废弃的entry都清理掉。在`expungeStaleEntries()`内部是通过遍历哈希表，对所有废弃的槽位调用`expungeStaleEntry()`来进行回收的。将哈希表的废弃槽位清理以后，检查当前哈希表的大小`size`是否超过阀值`threshold - threshold / 4`，如果超过则进行`resize()`操作。`threshold`的默认值是哈希表长度的`2/3`，所以当哈希表中的数量超过了当前哈希表长度的`5/6`的时候就会触发扩容。
+`rehash()`的逻辑分为两块，先是通过`expungeStaleEntries()`将哈希表中所有废弃的entry都清理掉。在`expungeStaleEntries()`内部是通过遍历哈希表，对所有废弃的槽位调用`expungeStaleEntry()`来进行回收的。将哈希表的废弃槽位清理以后，检查当前哈希表的大小`size`是否超过阈值`threshold - threshold / 4`，如果超过则进行`resize()`操作。`threshold`的默认值是哈希表长度的`2/3`，所以当哈希表中的数量超过了当前哈希表长度的`5/6`的时候就会触发扩容。
 
 {% highlight java %}
 private void resize() {
