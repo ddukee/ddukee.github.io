@@ -15,7 +15,7 @@ published: true
 *注：本文的原理分析基于JDK8的源码。*
 
 ## Future接口
-`FutureTask`类实现了`Future`接口。在Java中，`Future`接口抽象了异步计算的结果，就像接口名称所表示的那样：`Future`对象持有的是一个未来的结果，这个未来的结果通过异步方式计算得到。`Future`对象提供了一系列的方法来完成和异步计算结果的交互。
+`FutureTask`类实现了`Future`接口。`Future`接口抽象了异步计算的结果，就像接口名称所表示的那样：`Future`对象持有的是一个未来的结果，这个未来的结果通过异步方式计算得到。`Future`对象提供了一系列的方法来完成和异步计算结果的交互。
 
 {% highlight java %}
 public interface Future<V> {
@@ -28,9 +28,9 @@ public interface Future<V> {
 }
 {% endhighlight %}
 
-`Future`接口提供了`get()`方法用于阻塞获取异步计算结果。同时`cancel()`方法提供了取消异步计算的任务。所以可以发现，`Future`对象的作用一方面是抽象了异步计算结果；另一方面`Future`对象本质上解决的是线程间同步的问题：协调提交计算的线程和执行计算的线程，`get()`方法阻塞获取计算结果，其实就是和异步计算的线程进行同步，通过`get()`和`cancel()`方法和执行异步计算的线程进行交互。
+`Future`接口提供的`get()`方法用于阻塞获取异步计算结果，`cancel()`方法用于取消异步计算任务。所以可以发现：`Future`对象一方面抽象了异步计算结果；另一方面`Future`本质上是一种实现线程间同步的组件：协调提交计算的线程和执行计算的线程。具体到`FutureTask`实现，它的作用就是在提交任务的线程和线程池中执行任务的工作线程之间提供某种同步机制。
 
-具体到`FutureTask`实现来说，它的作用就是在提交任务的线程和线程池中执行任务的工作线程之间提供某种同步机制。为了实现`get()`和`cancel()`方法，`Future`的实现类需要解决三个问题：
+为了实现`get()`和`cancel()`方法，`Future`的实现类需要解决三个问题：
 
 1. 如何实现异步计算结果的传递和访问。
 2. 如何实现线程同步。
@@ -81,9 +81,7 @@ public abstract class AbstractExecutorService implements ExecutorService {
 }
 {% endhighlight %}
 
-`newTaskFor()`方法是一个`protected`修饰的方法，在继承`AbstractExecutorService`的子类中可以自行实现适配逻辑。`ThreadPoolExecutor`使用的是`AbstractExecutorService`的默认实现：将`Runnable`和`Callable`对象包装成`FutureTask`对象。
-
-线程池的实现类通过`newTaskFor()`实现了普通任务对象到`Future`任务的适配。同时，由于`FutureTask`本身也实现了`RunnableFuture`接口，所以可以作为一个任务对象被线程池执行。下面我们来看下`FutureTask`内部是如何表示被转换的任务的。
+`newTaskFor()`方法是一个`protected`修饰的方法，在继承`AbstractExecutorService`的子类中可以自行实现适配逻辑。`ThreadPoolExecutor`使用的是`AbstractExecutorService`的默认实现：将`Runnable`或`Callable`对象包装成`FutureTask`对象。下面我们来看下`FutureTask`内部是如何表示被转换的任务的。
 
 {% highlight java %}
 public class FutureTask<V> implements RunnableFuture<V> {
@@ -145,11 +143,11 @@ public class FutureTask<V> implements RunnableFuture<V> {
 }
 {% endhighlight %}
 
-这里我们可以看到，`FutureTask`提供了两个构造方法将传入的`Runnable`对象和`Callable`对象存储到一个`Callable`类型的对象`callable`中，然后通过改写实现`run()`方法来重写任务执行的逻辑。在开始分析`run()`方法前，我们先来看下`FutureTask`的状态管理。
+这里我们可以看到，`FutureTask`提供了两个构造方法将传入的`Runnable`对象和`Callable`对象存储到一个`Callable`类型的成员变量`callable`中，然后通过改写`run()`方法来重写任务执行的逻辑。
 
 ### 同步
 
-前面我们提到`Future`本质上是实现了两个线程间的同步。而`FutureTask`的实现是通过状态控制来实现线程间的同步的。具体来说，`FutureTask`内部维护了一个`volatile`修饰的`state`字段，用于跟踪`FutureTask`执行的状态，状态的变更是通过`Unsafe`类中的CAS操作完成的。`FutureTask`定义了7种状态：
+前面我们提到`Future`本质上是实现了两个线程间的同步。为了支持状态查询、`get()`和`cancel()`操作，`FutureTask`的实现通过状态控制来实现线程间的同步的。具体来说，`FutureTask`内部维护了一个`volatile`修饰的`state`字段，用于跟踪`FutureTask`执行的状态，状态的变更是通过`Unsafe`类中的CAS操作完成的。`FutureTask`定义了7种状态：
 
 | 状态 | 值 | 描述 |
 | --- + -- + --- |
@@ -161,13 +159,12 @@ public class FutureTask<V> implements RunnableFuture<V> {
 |INTERRUPTING | 5 | 执行任务的线程被中断 |
 |INTERRUPTED | 6 | 中断成功 |
 
-在`FutureTask`中的这些状态，都是通过方法调用触发状态跃迁的。在状态变更过程中，通过CAS操作满足原子性操作。由于存储状态的字段`state`被修饰了`volatile`，所以在满足了 **happen-before原则** 的更新中可以通过低成本的方式保护数据被安全地访问，这在后面具体分析源码的过程中我们会再次提到。下面是状态的跃迁图：
+`FutureTask`中定义的这些状态通过方法调用触发状态的跃迁。在状态跃迁过程时，通过CAS操作满足原子性操作。由于存储状态的字段`state`被修饰了`volatile`，所以在满足了 **happen-before原则** 的更新中可以通过非阻塞的方式保护数据被安全地访问，这在后面具体分析源码的过程中我们会再次提到。下面是状态的跃迁图：
 
 ![state](/assets/images/future_task_0.png){:width="50%" hight="50%"}
 
-### run()方法
-
-首先，我们来分析下`run()`方法。前面提到，`FutureTask`是通过重写`Runnable`的`run()`方法实现对任务执行逻辑的控制。
+### run( )方法
+`FutureTask`通过重写`Runnable`的`run()`方法实现对任务执行逻辑的控制。`FutureTask`中关于异步计算获取和结果同步的核心逻辑都封装在`run()`方法中，下面我们来一窥究竟：
 
 {% highlight java %}
 public void run() {
@@ -204,7 +201,7 @@ public void run() {
 }
 {% endhighlight %}
 
-在`run()`方法，执行的第一步先判断当前`FutureTask`的状态，如果当前状态是`NEW`并且`runner`的值为`null`则表示任务可以被执行。`runner`的值记录了执行当前任务的线程，如果`runner`的值不为`null`则表示已经有线程在执行这个任务了。
+在`run()`方法，执行的第一步是先判断当前`FutureTask`的状态，如果当前状态是`NEW`并且`runner`的值为`null`则表示任务可以被执行。`runner`的值记录了执行当前任务的线程，如果`runner`的值不为`null`则表示已经有线程在执行这个任务了。
 
 满足执行条件以后，开始执行存储在`callable`成员变量中的任务。如果执行成功则将任务执行的结果通过`set()`方法将值保存到`outcome`成员变量中。
 
@@ -220,7 +217,7 @@ protected void set(V v) {
 
 在`set()`方法中，先将状态转换到`COMPLETING`状态，然后将结果存储到`outcome`中。最后将状态变成`NORMAL`。
 
-如果在执行任务的过程中抛出了一次，则会调用`setException()`方法，将异常对象存储到`outcome`中，同时将线程池的状态变成`EXCEPTIONAL`状态，这里复用了`outcome`成员变量来存储异常对象。
+如果在执行任务的过程中抛出了异常，则会调用`setException()`方法将异常对象存储到`outcome`中，同时将线程池的状态变成`EXCEPTIONAL`，这里复用了`outcome`成员变量来存储异常对象。
 
 {% highlight java %}
 protected void setException(Throwable t) {
@@ -231,6 +228,8 @@ protected void setException(Throwable t) {
     }
 }
 {% endhighlight %}
+
+通过`run()`方法我们可以发现，`FutureTask`的状态在`NEW`的时候，任务可能还未被执行，也有可能真正执行中，所以需要`runner`来做进一步的判断。如果`runner`不为`null`则表示任务已经被分配了一个线程，否则就是未执行状态，所以`FutureTask`的状态在跃迁到`COMPLETING`的时候就表示任务已经被执行过了，至于是否正常执行完成则需要后面的两个状态`NORMAL`和`EXCEPTIONAL`来进一步表示。
 
 ### 获取结果
 
@@ -260,9 +259,9 @@ private V report(int s) throws ExecutionException {
 
 在`report()`方法中，检查当前状态是否是`NORMAL`，如果是则表示任务正常执行结束，返回异步计算的结果。否则判断任务是被取消了还是执行过程中抛出了异常，如果被取消则抛出`CancellationException`异常，如果是执行过程中抛了异常，则将异常放入异常链中并抛出`ExecutionException`异常。
 
-分析到这里，我们已经知道了`FutureTask`的实现是如何将异步计算的结果传递到外部的：由于线程是共享内存空间的，所以这里通过线程同步机制保证了数据的线程安全传递。  
+分析到这里，我们已经知道了`FutureTask`的实现是如何将异步计算的结果传递到外部的：由于线程是共享内存空间的，所以这里通过线程同步机制保证了数据被线程安全传递。  
 
-但是这里需要注意一个点：`outcome`在声明的时候是一个普通的成员对象，并没有修饰为`volatile`，而且`outcome`的访问也没有加锁。虽然在Java中赋值操作是原子操作，但是满足线程安全性的前提除了原子性以外还有可见性，那可见性是如何保证的呢？答案是通过满足JMM（Java内存模型）中的 **Happen-Before原则** 来实现。
+但是这里需要注意一个点：`outcome`在声明的时候是一个普通的成员对象，并没有修饰为`volatile`，而且`outcome`的访问也没有加锁。虽然在Java中赋值操作是原子操作，但是满足线程安全性的前提除了原子性以外还有可见性。那可见性是如何被保证的呢？答案是通过满足JMM（Java内存模型）中的 **Happen-Before原则** 来实现。
 
 我们来重新看下`set()`和`report()`方法的实现：
 
@@ -285,7 +284,7 @@ private V report(int s) throws ExecutionException {
 }
 {% endhighlight %}
 
-这里保证`outcome`可以线程安全地访问是运用了 **Happen-Before** 原则中的其中三条：
+这里保证`outcome`可以线程安全地被访问运用了 **Happen-Before** 原则中的其中三条：
 > 程序次序规则
 > : 一个线程内，按照代码顺序，书写在前面的操作先行发生于书写在后面的操作
 >
@@ -297,7 +296,7 @@ private V report(int s) throws ExecutionException {
 
 首先，`state`是一个修饰了`volatile`关键字的成员变量，满足内存的可见性要求和 **Happen-Before** 原则中的 **volatile变量规则**。
 
-当`set()`被执行的时候，先将值`outcome`设置为`v`，然后调用`UNSAFE.putOrderedInt(this, stateOffset, NORMAL);`将state的值设置为`NORMAL`。这里没有直接用赋值操作而是用`Unsafe`的`putOrderedInt()`方式是为了优化`volatile`变量的写操作。这里`outcome`和`state`的赋值语句的先后顺序很重要：满足 **程序次序规则**。同理，在`report()`中，入参是在`get()`中获取的`state`值，所以对`state`的读操作先于`Object x = outcome`发生。如果我们把 **Happen-Before** 的第三条传递规则加上，则可以满足这样一个执行流：
+当`set()`被执行的时候，先将值`outcome`设置为`v`，然后调用`UNSAFE.putOrderedInt(this, stateOffset, NORMAL)`将state的值设置为`NORMAL`。这里没有直接用赋值操作而是用`Unsafe`的`putOrderedInt()`方式是为了优化`volatile`变量的写操作。这里`outcome`和`state`的赋值语句的先后顺序很重要，需要满足 **程序次序规则**。同理，在`report()`中，入参是在`get()`中获取的`state`值，所以对`state`的读操作先于`Object x = outcome`发生。如果我们把 **Happen-Before** 的第三条传递规则加上，刚才描述的过程会对应于这样一个执行流：
 
 {% highlight java %}
 1. write outcome v
@@ -306,13 +305,15 @@ private V report(int s) throws ExecutionException {
 4. read outcome
 {% endhighlight %}
 
-这个执行流就保证了对`outcome`的写肯定是先于对`outcome`的读发生的，达到了对`outcome`的线程安全访问。
+这个执行流就保证了对`outcome`的写肯定是先于对`outcome`的读发生的，实现了`outcome`的可见性。
 
-下面开始分析阻塞逻辑。由于`Future`表示的是一个异步计算的结果，既然是计算过程是异步，那么就需要某种同步机制来协调两个线程。在Java线程中，我们常用的线程间同步方式就是使用`wait-notify`机制。如果有多个线程阻塞在`get()`方法上的时候，可以通过`wait-notifyAll()`来通知所有阻塞的线程。不过在`FutureTask`的实现中，采用的是基于`Unsafe`的`park()`和`unpark()`操作来实现线程的阻塞和唤醒，阻塞线程的排队则是通过一个无锁栈数据结构 **Treiber stack** 来实现。
+下面开始分析阻塞逻辑。由于`Future`表示的是一个异步计算的结果，既然计算过程是异步的，那么就需要某种同步机制来协调两个线程。在Java多线程中，我们常用的线程间同步方式是使用`wait-notify/notifyAll`机制。不同于这个方案，在`FutureTask`的实现中，采用的是基于`Unsafe`的`park()`和`unpark()`操作来实现线程的阻塞和唤醒，阻塞线程的集合则是通过维护一个无锁栈数据结构 **Treiber stack** 来实现的。
 
-#### Treiber stack
+### Treiber stack
 
-Treiber stack是一个栈数据结构，支持无锁入栈和出栈操作，在并发访问下有良好的性能。结构上和普通的栈数据结构没有区别，唯一的不同是在入栈和出栈的时候，不同于阻塞的数据结构：需要加锁来保护栈顶指针，在Treiber stack的实现中，采用了CompareAndSwap机制来更新栈顶的指针以实现无锁入队和出队操作。
+Treiber stack是一种 **栈** 数据结构，最早是由 **R. Kent Treiber** 在1986年的发布的论文《Systems Programming: Coping with Parallelism》中提出[^1]，支持无锁入栈和出栈操作，在并发情况下有良好的访问性能。
+
+Treiber stack结构上和普通的栈数据结构没有区别，唯一的不同是在入栈和出栈的时候，不同于阻塞的数据结构：需要加锁来保护栈顶指针，在Treiber stack的实现中，采用了CompareAndSwap机制来更新栈顶的指针以实现无锁入队和出队操作。
 
 ![stack](/assets/images/future_task_1.png){:width="25%" hight="25%"}
 
@@ -354,7 +355,7 @@ public class ConcurrentStack <E> {
 }
 {% endhighlight %}
 
-`FutureTask`的Treiber stack实现，使用`WaitNode`作为栈中的元素，通过`next`成员变量来支撑栈结构。通过`awaitDone()`和`finishCompletion()`来完成入栈和出栈操作。
+`FutureTask`的Treiber stack实现，使用`WaitNode`作为栈中的元素，通过`next`成员变量来联结栈中的元素。通过`awaitDone()`和`finishCompletion()`来完成入栈和出栈操作。
 
 {% highlight java %}
 static final class WaitNode {
@@ -364,7 +365,7 @@ static final class WaitNode {
 }
 {% endhighlight %}
 
-#### 阻塞和唤醒
+### 阻塞和唤醒
 
 `get()`方法的阻塞逻辑在`awaitDone()`中：
 
@@ -409,7 +410,7 @@ private int awaitDone(boolean timed, long nanos)
 
 `awaitDone()`支持一个超时时间参数，如果在超时时间内（如果超时时间大于0）状态没有进入完成或者取消状态，则执行`UNSAFE.compareAndSwapObject(this, waitersOffset, q.next = waiters, q)`进行入栈操作并调用`LockSupport.park(this)`将调用线程挂起。如果超时或者等待的线程被中断了，则需要调用`removeWaiter()`将之前入栈的那个`WaitNode`对象从栈中删除。
 
-当任务执行完成以后，`FutureTask`会调用`finishCompletion()`将栈中的所有对象出栈，并调用`LockSupport.unpark(t)`将线程唤醒。
+当任务执行完成以后，`FutureTask`会调用`finishCompletion()`对栈中的所有对象逐个调用`LockSupport.unpark(t)`唤醒阻塞的线程并出栈。
 
 {% highlight java %}
 private void finishCompletion() {
@@ -437,7 +438,7 @@ private void finishCompletion() {
 {% endhighlight %}
 
 ### 取消任务
-下面我们来看下`FutureTask`是如何实现取消任务的。
+下面我们来看下`FutureTask`是如何取消任务的。
 
 {% highlight java %}
 public boolean cancel(boolean mayInterruptIfRunning) {
@@ -462,9 +463,9 @@ public boolean cancel(boolean mayInterruptIfRunning) {
 }
 {% endhighlight %}
 
-`cancel()`方法支持一个`mayInterruptIfRunning`参数，表示是否允许中断允许中的任务。首先检查当前的状态，如果当前状态是`NEW`则基于参数`mayInterruptIfRunning`的值将状态跃迁到`INTERRUPTING`或`CANCELLED`。如果不需要中断则直接跃迁到`CANCELLED`状态。如果在调用状态跃迁的CAS操作的时候失败了，则表示任务已经执行完成了，任务不能被取消，所以直接返回false。如果在修改完状态以后任务仍旧在执行中，那么当`mayInterruptIfRunning`为true的时候需要对执行中的线程进行中断，最后将状态跃迁到`INTERRUPTED`状态。
+`cancel()`方法支持一个`mayInterruptIfRunning`参数，表示是否允许中断运行中的任务。首先检查当前的状态，如果当前状态是`NEW`则基于参数`mayInterruptIfRunning`的值将状态跃迁到`INTERRUPTING`或`CANCELLED`。如果不需要中断运行中的任务则直接跃迁到`CANCELLED`状态。如果状态跃迁的CAS操作失败了，则表示任务已经执行完成了任务不能被取消，所以直接返回false。如果在修改完状态以后任务仍旧在执行中，那么当`mayInterruptIfRunning`为`true`的时候需要对执行中的线程进行中断，最后将状态跃迁到`INTERRUPTED`状态。
 
-`run()`方法中有一步我们之前没有提，那就是最后退出前执行的`handlePossibleCancellationInterrupt()`方法，这个方法的作用是确保状态是`INTERRUPTING`的时候，目标线程需要等到`cancel()`发出中断命令且目标线程接收到中断命令以后再返回，以保证中断命令不会丢失。
+在状态从`INTERRUPTING`跃迁到`INTERRUPTED`之间有一个时间窗口，如果在这个时间窗口中执行任务的线程执行成功了，那么可能会丢失`cancel()`发起的中断信号。为了解决这个问题，`run()`方法在`finally`中会调用`handlePossibleCancellationInterrupt()`方法。这个方法的作用是当状态是`INTERRUPTING`的时候，目标线程需要等到`cancel()`发出中断命令且目标线程接收到中断命令以后再返回，以保证中断命令不会丢失。
 
 {% highlight java %}
 private void handlePossibleCancellationInterrupt(int s) {
@@ -476,6 +477,10 @@ private void handlePossibleCancellationInterrupt(int s) {
 }
 {% endhighlight %}
 
+在`cancel()`和`handlePossibleCancellationInterrupt()`之间保证了一个时序操作，保证中断信号不丢失。
+
 ## 总结
-上面我们分析了`FutureTask`这个`Future`实现的原理，介绍了如何解决异步计算线程和发起计算的线程之间的同步、计算结果的传递以及任务的取消这三个问题。
+上面我们分析了`FutureTask`实现的原理，介绍了如何解决同步异步转换（阻塞-通知）、传递计算结果以及取消任务这三个问题。
+
+[^1]: [https://en.wikipedia.org/wiki/Treiber_stack](https://en.wikipedia.org/wiki/Treiber_stack)
 
