@@ -277,18 +277,15 @@
     border-collapse: collapse;
     margin-bottom: 15px;
     width: 100%;
-    
-    th {
-      @include relative-font-size(0.9);
-      padding: 0.3em 0.5em;
-      font-weight: $base-font-weight * 1.2;
-      color: white;
-      background-color: $red-color;
-    }
+    border-collapse: collapse;
     
     thead {
-      tr {
-        border-bottom: solid 2px #fff;
+      th {
+        @include relative-font-size(0.9);
+        padding: 0.3em 0.5em;
+        font-weight: $base-font-weight * 1.2;
+        color: white;
+        background-color: $red-color;
       }
     }
     
@@ -296,8 +293,8 @@
       @include relative-font-size(0.8);
       background-color: #fefefe;
       td {
-        border-bottom: solid 1px #ddd;
         padding: 0.3em 0.5em;
+        // border: solid 1px #ddd;
       }
       
       tr:nth-child(even) {

@@ -35,17 +35,17 @@
         {{ content }}
       </div>
       <div class="post-navigator">
-        {% if page.next %}
+        {% if page.previous %}
           <div class="previous-navigator">
-            <a href="{{ page.next.url }}" class="previous-post-arrow">&lt; {{ page.next.title }}</a>
+            <a href="{{ page.previous.url }}" class="previous-post-arrow">&lt; {{ page.previous.title }}</a>
           </div>
         {% else %}
           <div class="previous-navigator">&nbsp;</div>
         {% endif %}
           <div class="home-navigator"><a href="/">HOME</a></div>
-        {% if page.previous %}
+        {% if page.next %}
           <div class="next-navigator">
-            <a href="{{ page.previous.url }}" class="next-post-arrow">{{ page.previous.title }} &gt;</a>
+            <a href="{{ page.next.url }}" class="next-post-arrow">{{ page.next.title }} &gt;</a>
           </div>
         {% else %}
           <div class="next-navigator">&nbsp;</div>
