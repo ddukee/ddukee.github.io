@@ -38,7 +38,7 @@
   @include relative-font-size(1.5);
   @extend %page-width;
   letter-spacing: -0.025em;
-  font-family: $base-font-family;
+  font-family: $post-font-family;
 }
 
 .post-meta-info {
@@ -71,6 +71,11 @@
   font-family: $post-font-family;
   @extend %page-width;
   margin-top: 40px;
+  
+  em {
+    color: #aaa;
+    @include relative-font-size(0.9);
+  }
 
   p {
     color: $content-color;
@@ -172,7 +177,7 @@
   }
   
   h1, h2, h3, h4 {
-    font-family: $base-font-family;
+    font-family: $post-font-family;
     font-weight: $base-font-weight * 1.5;
     margin-bottom: 0.5em;
   }
