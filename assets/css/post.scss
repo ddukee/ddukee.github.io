@@ -206,13 +206,19 @@
   }
   
   ol, ul {
-    padding-left: 3em;
+    padding-left: 2em;
+  }
+  
+  ol {
+    li {
+      list-style-type: decimal;
+    }
   }
   
   li {
     color: $content-color;
     list-style: outside;
-  } 
+  }
   
   img {
     display: block;
@@ -278,6 +284,7 @@
     margin-bottom: 15px;
     width: 100%;
     border-collapse: collapse;
+    border-bottom: solid 1px #ddd;
     
     thead {
       th {
@@ -287,6 +294,10 @@
         color: white;
         background-color: $red-color;
       }
+      
+      th:not(:first-child) {
+        border-left: solid 1px #fff;
+      }
     }
     
     tbody {
@@ -294,7 +305,10 @@
       background-color: #fefefe;
       td {
         padding: 0.3em 0.5em;
-        // border: solid 1px #ddd;
+      }
+      
+      td:not(:first-child) {
+        border-left: solid 1px #ddd;
       }
       
       tr:nth-child(even) {
